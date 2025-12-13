@@ -4,7 +4,17 @@ export const menuWidthStore = defineStore("menuWidth" , {
         // 侧边栏宽度
         menuWidth: '240px',
         // 或者用布尔值更简洁
-        isCollapse: false
+        isCollapse: false,
+        //路径映射
+        menuList: [
+            { index: '1', path: '/#', name: '每日一练' },
+            { index: '2', path: '/publishTest', name: '发布考试' },
+            { index: '3', path: '/answerExam', name: '参与考试' },
+            { index: '4', path: '/#', name: '查看试卷' },
+            { index: '4-1', path: '/publishedExams', name: '我发布的' },
+            { index: '4-2', path: '/#', name: '我参与的' },
+
+        ],
     }),
 
     actions: {
@@ -23,7 +33,8 @@ export const menuWidthStore = defineStore("menuWidth" , {
         setCollapse(value) {
             this.isCollapse = value
             this.menuWidth = value ? '64px' : '240px'
-        }
+        },
+
     },
 
     getters: {
