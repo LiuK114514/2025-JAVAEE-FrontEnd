@@ -6,11 +6,13 @@ export const useExamStore = defineStore('exam', () => {
 
     // 试卷基本信息
     const formData = ref({
+        examCode: '',// 试卷码
         examName: '',
+        description: '',
         startDate: '',
         startTime: '',
         duration: 60,
-        showAnswers: true,//运输查看试卷
+        showAnswers: true,//允许查看试卷
         questions: []//题目
     })
 
@@ -80,7 +82,15 @@ export const useExamStore = defineStore('exam', () => {
                 break
         }
     }
-
+    //生成试卷码
+    function generateExamCode(length = 6) {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+        let code = ''
+        for (let i = 0; i < length; i++) {
+            code += chars.charAt(Math.floor(Math.random() * chars.length))
+        }
+        return code
+    }
     // 添加选项
     const addOption = () => {
         newQuestion.value.options.push('')
@@ -247,63 +257,67 @@ export const useExamStore = defineStore('exam', () => {
         // TODO: API
         allExams.value = [
             {
-                id: 1,
-                examName: '高等数学期中考试',
-                startDate: '2024-12-15',
+                id: 3,
+                examCode: 'MATH6A',
+                examName: '高等数学（一）期中考试',
+                startDate: '2024-12-14',
                 startTime: '09:00',
                 duration: 120,
                 showAnswers: true,
                 questions: [
-                    { id: 1, type: 'single', content: '题目1', score: 5 },
-                    { id: 2, type: 'multiple', content: '题目2', score: 10 }
+                    { id: 1, type: 'single', content: '极限计算', score: 5 },
+                    { id: 2, type: 'multiple', content: '函数性质', score: 10 }
+                ],
+                status: 'ended',
+                participants: 160,
+                submitted: 158,
+                graded: 150
+            },
+            {
+                id: 102,
+                examCode: 'LINALG',
+                examName: '线性代数期中测试',
+                startDate: '2024-12-16',
+                startTime: '14:00',
+                duration: 90,
+                showAnswers: true,
+                questions: [
+                    { id: 1, type: 'single', content: '矩阵运算', score: 5 },
+                    { id: 2, type: 'multiple', content: '行列式', score: 10 }
                 ],
                 status: 'ongoing',
-                participants: 156,
-                submitted: 0,
+                participants: 140,
+                submitted: 80,
                 graded: 0
             },
             {
-                id: 2,
-                examName: '线性代数期末考试',
-                startDate: '2024-12-20',
-                startTime: '13:00',
-                duration: 90,
-                showAnswers: false,
-                questions: [
-                    { id: 1, type: 'single', content: '题目1', score: 5 },
-                    { id: 2, type: 'multiple', content: '题目2', score: 10 }
-                ],
-                status: 'upcoming',
-                participants: 120,
-                submitted: 0,
-                graded: 0
-            },
-            {
-                id: 3,
+                id: 103,
+                examCode: 'PHY101',
                 examName: '大学物理期中考试',
-                startDate: '2024-11-30',
+                startDate: '2024-12-10',
                 startTime: '10:00',
                 duration: 100,
                 showAnswers: true,
                 questions: [
-                    { id: 1, type: 'single', content: '题目1', score: 5 },
-                    { id: 2, type: 'multiple', content: '题目2', score: 10 }
+                    { id: 1, type: 'judge', content: '牛顿定律判断', score: 5 },
+                    { id: 2, type: 'single', content: '动量守恒', score: 5 }
                 ],
                 status: 'ended',
-                participants: 200,
-                submitted: 200,
-                graded: 180
+                participants: 180,
+                submitted: 180,
+                graded: 175
             },
             {
-                id: 4,
+                id: 104,
+                examCode: 'CSBAS1',
                 examName: '计算机基础期末考试',
                 startDate: '2024-12-18',
-                startTime: '14:00',
+                startTime: '15:00',
                 duration: 120,
                 showAnswers: true,
                 questions: [
-                    { id: 1, type: 'single', content: '题目1', score: 5 },
-                    { id: 2, type: 'multiple', content: '题目2', score: 10 }
+                    { id: 1, type: 'single', content: '操作系统基础', score: 5 },
+                    { id: 2, type: 'multiple', content: '计算机网络', score: 10 }
                 ],
                 status: 'upcoming',
                 participants: 150,
@@ -311,98 +325,104 @@ export const useExamStore = defineStore('exam', () => {
                 graded: 0
             },
             {
-                id: 5,
-                examName: '英语综合测试',
+                id: 105,
+                examCode: 'ENGT01',
+                examName: '大学英语综合测试',
                 startDate: '2024-12-22',
                 startTime: '09:30',
                 duration: 60,
                 showAnswers: false,
                 questions: [
-                    { id: 1, type: 'single', content: '题目1', score: 5 },
-                    { id: 2, type: 'multiple', content: '题目2', score: 10 }
+                    { id: 1, type: 'single', content: '词汇选择', score: 5 },
+                    { id: 2, type: 'essay', content: '阅读理解', score: 15 }
                 ],
                 status: 'upcoming',
-                participants: 180,
+                participants: 190,
                 submitted: 0,
                 graded: 0
             },
             {
-                id: 6,
-                examName: '高等数学期末考试',
-                startDate: '2024-12-28',
-                startTime: '09:00',
-                duration: 120,
-                showAnswers: true,
-                questions: [
-                    { id: 1, type: 'single', content: '题目1', score: 5 },
-                    { id: 2, type: 'multiple', content: '题目2', score: 10 }
-                ],
-                status: 'ended',
-                participants: 156,
-                submitted: 0,
-                graded: 0
-            },
-            {
-                id: 7,
-                examName: '概率论与数理统计期中考试',
-                startDate: '2024-12-12',
-                startTime: '14:00',
-                duration: 90,
-                showAnswers: true,
-                questions: [
-                    { id: 1, type: 'single', content: '题目1', score: 5 },
-                    { id: 2, type: 'multiple', content: '题目2', score: 10 }
-                ],
-                status: 'ended',
-                participants: 130,
-                submitted: 130,
-                graded: 130
-            },
-            {
-                id: 8,
+                id: 106,
+                examCode: 'DS2024',
                 examName: '数据结构期末考试',
                 startDate: '2024-12-25',
                 startTime: '10:00',
                 duration: 120,
                 showAnswers: true,
                 questions: [
-                    { id: 1, type: 'single', content: '题目1', score: 5 },
-                    { id: 2, type: 'multiple', content: '题目2', score: 10 }
+                    { id: 1, type: 'single', content: '链表操作', score: 5 },
+                    { id: 2, type: 'multiple', content: '二叉树遍历', score: 10 }
                 ],
                 status: 'upcoming',
-                participants: 160,
+                participants: 165,
                 submitted: 0,
                 graded: 0
             },
             {
-                id: 9,
-                examName: '离散数学期中考试',
-                startDate: '2024-12-08',
-                startTime: '11:00',
+                id: 107,
+                examCode: 'PROSTA',
+                examName: '概率论与数理统计期中考试',
+                startDate: '2024-12-12',
+                startTime: '13:30',
+                duration: 90,
+                showAnswers: true,
+                questions: [
+                    { id: 1, type: 'single', content: '随机变量', score: 5 },
+                    { id: 2, type: 'multiple', content: '概率分布', score: 10 }
+                ],
+                status: 'ended',
+                participants: 135,
+                submitted: 135,
+                graded: 130
+            },
+            {
+                id: 108,
+                examCode: 'DISMAT',
+                examName: '离散数学期末考试',
+                startDate: '2024-12-27',
+                startTime: '14:00',
                 duration: 100,
                 showAnswers: true,
                 questions: [
-                    { id: 1, type: 'single', content: '题目1', score: 5 },
-                    { id: 2, type: 'multiple', content: '题目2', score: 10 }
-                ],
-                status: 'ended',
-                participants: 140,
-                submitted: 140,
-                graded: 135
-            },
-            {
-                id: 10,
-                examName: '大学化学期末考试',
-                startDate: '2024-12-30',
-                startTime: '13:00',
-                duration: 90,
-                showAnswers: false,
-                questions: [
-                    { id: 1, type: 'single', content: '题目1', score: 5 },
-                    { id: 2, type: 'multiple', content: '题目2', score: 10 }
+                    { id: 1, type: 'single', content: '命题逻辑', score: 5 },
+                    { id: 2, type: 'multiple', content: '图论基础', score: 10 }
                 ],
                 status: 'upcoming',
-                participants: 170,
+                participants: 145,
+                submitted: 0,
+                graded: 0
+            },
+            {
+                id: 109,
+                examCode: 'CHEM01',
+                examName: '大学化学期中考试',
+                startDate: '2024-12-08',
+                startTime: '11:00',
+                duration: 90,
+                showAnswers: true,
+                questions: [
+                    { id: 1, type: 'single', content: '化学反应速率', score: 5 },
+                    { id: 2, type: 'judge', content: '化学平衡判断', score: 5 }
+                ],
+                status: 'ended',
+                participants: 150,
+                submitted: 148,
+                graded: 145
+            },
+            {
+                id: 110,
+                examCode: 'OOPFIN',
+                examName: '面向对象程序设计期末考试',
+                startDate: '2024-12-30',
+                startTime: '13:00',
+                duration: 120,
+                showAnswers: false,
+                questions: [
+                    { id: 1, type: 'single', content: '类与对象', score: 5 },
+                    { id: 2, type: 'essay', content: '设计模式简述', score: 15 }
+                ],
+                status: 'upcoming',
+                participants: 175,
                 submitted: 0,
                 graded: 0
             }
@@ -493,6 +513,7 @@ export const useExamStore = defineStore('exam', () => {
         getTypeName,
         getTypeTag,
         newQuestion,
+        generateExamCode,
         initNewQuestion,
         addOption,
         removeOption,

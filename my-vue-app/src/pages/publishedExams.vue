@@ -82,8 +82,18 @@
         <!-- 考试头部信息 -->
         <div class="exam-header">
           <div class="exam-info">
-            <h3>{{ exam.examName }}</h3>
-            <div class="exam-meta">
+            <h3>{{ exam.examName }}
+              <el-tag
+                  type="success"
+                  size="small"
+                  class="exam-code-tag"
+              >
+                考试码：{{ exam.examCode }}
+              </el-tag>
+            </h3>
+
+
+          <div class="exam-meta">
               <el-icon><Calendar /></el-icon>
               <span>{{ exam.startDate }}</span>
               <el-icon><Clock /></el-icon>
@@ -298,22 +308,21 @@
         <el-table-column label="操作" width="150">
           <template #default="{ row }">
             <el-button
-                v-if="row.status !== 'graded'"
                 type="primary"
                 size="small"
-                @click="startGrading(row)"
+                @click="startGrading(selectedExam.id,row)"
             >
               开始批阅
             </el-button>
-            <el-button
-                v-else
-                type="info"
-                size="small"
-                plain
-                @click="viewGradingDetail(row)"
-            >
-              查看详情
-            </el-button>
+<!--            <el-button-->
+<!--                v-else-->
+<!--                type="info"-->
+<!--                size="small"-->
+<!--                plain-->
+<!--                @click="viewGradingDetail(row)"-->
+<!--            >-->
+<!--              查看详情-->
+<!--            </el-button>-->
           </template>
         </el-table-column>
       </el-table>
@@ -329,52 +338,53 @@
         />
       </div>
     </el-card>
-    <!-- 查看详情对话框 - 全屏模式 -->
-    <el-dialog
-        v-model="showDetailDialog"
-        title="批改详情"
-        fullscreen
-    >
-      <div v-if="showDetailDialog" class="detail-dialog-content">
-        <!-- 学生信息和成绩卡片 -->
-        <el-card class="result-card" shadow="never">
-          <div class="result-header">
-            <div class="student-info">
-              <h3>{{ currentStudent?.name }}</h3>
-              <p>邮箱: {{ currentStudent?.email }}</p>
-              <p>提交时间: {{ currentStudent?.submitTime }}</p>
-            </div>
-            <div class="score-display">
-              <div class="score-number" :class="getScoreClass(currentStudent?.score, selectedExam?.totalScore)">
-                {{ currentStudent?.score }}
-              </div>
-              <div class="score-label">总分: {{ selectedExam?.totalScore }}</div>
-              <el-tag
-                  :type="getScoreTagType(currentStudent?.score, selectedExam?.totalScore)"
-                  size="large"
-              >
-                {{ calculatePercentage(currentStudent?.score, selectedExam?.totalScore) }}%
-              </el-tag>
-            </div>
-          </div>
 
-          <!-- 批改评语 -->
-          <el-divider />
-          <div v-if="currentStudent?.comment" class="comment-section">
-            <h4>批改评语</h4>
-            <div class="comment-content">{{ currentStudent.comment }}</div>
-          </div>
-        </el-card>
+<!--    &lt;!&ndash; 查看详情对话框 - 全屏模式 &ndash;&gt;-->
+<!--    <el-dialog-->
+<!--        v-model="showDetailDialog"-->
+<!--        title="批改详情"-->
+<!--        fullscreen-->
+<!--    >-->
+<!--      <div v-if="showDetailDialog" class="detail-dialog-content">-->
+<!--        &lt;!&ndash; 学生信息和成绩卡片 &ndash;&gt;-->
+<!--        <el-card class="result-card" shadow="never">-->
+<!--          <div class="result-header">-->
+<!--            <div class="student-info">-->
+<!--              <h3>{{ currentStudent?.name }}</h3>-->
+<!--              <p>邮箱: {{ currentStudent?.email }}</p>-->
+<!--              <p>提交时间: {{ currentStudent?.submitTime }}</p>-->
+<!--            </div>-->
+<!--            <div class="score-display">-->
+<!--              <div class="score-number" :class="getScoreClass(currentStudent?.score, selectedExam?.totalScore)">-->
+<!--                {{ currentStudent?.score }}-->
+<!--              </div>-->
+<!--              <div class="score-label">总分: {{ selectedExam?.totalScore }}</div>-->
+<!--              <el-tag-->
+<!--                  :type="getScoreTagType(currentStudent?.score, selectedExam?.totalScore)"-->
+<!--                  size="large"-->
+<!--              >-->
+<!--                {{ calculatePercentage(currentStudent?.score, selectedExam?.totalScore) }}%-->
+<!--              </el-tag>-->
+<!--            </div>-->
+<!--          </div>-->
 
-        <!-- 答题详情 -->
-        <ExamAnswerSheet
-            mode="review"
-            :exam-data="detailExamData"
-            :initial-answers="detailAnswers"
-            @close="showDetailDialog = false"
-        />
-      </div>
-    </el-dialog>
+<!--          &lt;!&ndash; 批改评语 &ndash;&gt;-->
+<!--          <el-divider />-->
+<!--          <div v-if="currentStudent?.comment" class="comment-section">-->
+<!--            <h4>批改评语</h4>-->
+<!--            <div class="comment-content">{{ currentStudent.comment }}</div>-->
+<!--          </div>-->
+<!--        </el-card>-->
+
+<!--        &lt;!&ndash; 答题详情 &ndash;&gt;-->
+<!--        <AnswerCard-->
+<!--            mode="review"-->
+<!--            :exam-data="detailExamData"-->
+<!--            :initial-answers="detailAnswers"-->
+<!--            @close="showDetailDialog = false"-->
+<!--        />-->
+<!--      </div>-->
+<!--    </el-dialog>-->
 
     <!-- 统计视图 -->
     <el-card v-if="activeView === 'statistics' && selectedExam" class="statistics-card">
@@ -448,6 +458,9 @@ import {ArrowDown, ArrowUp} from "@element-plus/icons-vue";
 import { useExamStore } from '../stores/examStore'
 import { useGradeStore } from '../stores/gradeStore'
 import { useAnswerCardStore } from "../stores/answerCardStore.js";
+import AnswerCard from "../components/answerCard.vue";
+import router from "../router/router.js";
+import {ElMessage} from "element-plus";
 
 const examStore = useExamStore()
 const gradeStore = useGradeStore()
@@ -512,45 +525,19 @@ const currentStudent = ref(null)
 const detailExamData = ref(null)
 const detailAnswers = ref({})
 
-const startGrading = (row) => {
+const startGrading = async (examId,row) => {
   try {
-    // 1. 验证试卷数据
-    if (!props.selectedExam) {
-      ElMessage.error('试卷数据不存在')
-      return
+    if (!document.fullscreenElement) {
+      await document.documentElement.requestFullscreen()
     }
+    await  router.push({
+      path: `/grade/${examId}/${row.id}`
+    })
 
-    // 2. 验证学生提交数据
-    if (!row.answers) {
-      ElMessage.error('学生答案数据不存在')
-      return
-    }
-
-    // 3. 设置当前学生信息
-    currentStudent.value = {
-      id: row.id,
-      name: row.name,
-      email: row.email,
-      submitTime: row.submitTime
-    }
-
-    // 4. 准备试卷数据 - 深拷贝避免直接修改原数据
-    currentExamData.value = JSON.parse(JSON.stringify(props.selectedExam))
-
-    // 5. 设置学生答案
-    currentAnswers.value = { ...row.answers }
-
-    // 6. 自动批改客观题
-    autoGradeObjective(currentExamData.value, currentAnswers.value)
-
-    // 7. 打开批改对话框
-    showGradingDialog.value = true
-
-    ElMessage.success('已加载试卷,可以开始批改')
-  } catch (error) {
-    console.error('开始批改失败:', error)
-    ElMessage.error('开始批改失败,请重试')
+  } catch (e) {
+    ElMessage.error('无法进入全屏，请检查浏览器权限')
   }
+
 }
 
 // 查看批阅详情
@@ -573,6 +560,17 @@ const getProgressColor = (range) => {
 </script>
 
 <style scoped>
+.exam-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+
+.exam-code-tag {
+  cursor: pointer;
+  font-weight: 600;
+}
 .exam-publisher-page {
   padding: 24px;
   background-color: #f5f7fa;

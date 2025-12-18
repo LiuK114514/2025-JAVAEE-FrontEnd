@@ -5,6 +5,7 @@ import PublishTest from '../pages/publishTest.vue'
 import Layout from '../components/Layout/layout.vue'
 import PublishedExams from '../pages/publishedExams.vue'
 import AnswerExam from '../pages/answerExam.vue'
+import GradingPaper from '../pages/gradePaper.vue'
 
 const routes = [
     { path: '/',
@@ -37,7 +38,15 @@ const routes = [
                   title: '在线考试',
                   fullscreen: true
               }
-          }
+          },
+          {
+              path: 'grade/:examId/:paperId',
+              component: GradingPaper,
+              meta: {
+                  title: '试卷批改',
+                  fullscreen: true
+              }
+          },
       ]
 
     },

@@ -203,7 +203,6 @@
 
                     <!-- 单选题 -->
                     <div v-if="question.type === 'single'">
-
                       <div v-for="(opt, idx) in question.options" :key="idx">
                         <span><b>{{ String.fromCharCode(65 + idx) }}：</b>{{ opt }}</span>
                       </div>
@@ -364,9 +363,23 @@
             <el-descriptions-item label="考试名称">
               {{ examStore.formData.examName || '未填写' }}
             </el-descriptions-item>
-            <el-descriptions-item label="考试说明" :span="2">
-              {{ examStore.formData.description || '无' }}
+            <el-descriptions-item label="试卷码">
+              <el-tag type="success" size="large">
+                {{ examStore.formData.examCode || '未生成' }}
+              </el-tag>
+              <el-button
+                  type="danger"
+                  size="small"
+                  plain
+                  @click="regenerateExamCode"
+                  style="margin-left:30px"
+              >
+                重新生成
+              </el-button>
             </el-descriptions-item>
+<!--            <el-descriptions-item label="考试说明" :span="2">-->
+<!--              {{ examStore.formData.description || '无' }}-->
+<!--            </el-descriptions-item>-->
           </el-descriptions>
 
           <el-descriptions title="考试设置" :column="2" border style="margin-top: 20px">
@@ -420,13 +433,30 @@
   </div>
 </template>
 <script setup>
-import {computed, ref} from 'vue'
+import {computed, onMounted, ref} from 'vue'
 import {ElMessage} from "element-plus";
 import {Delete} from "@element-plus/icons-vue";
 import { useExamStore } from '../stores/examStore'
 const examStore = useExamStore()
 const active = ref(0)
 
+//生成试卷码
+onMounted(() => {
+  if (!examStore.formData.examCode) {
+    examStore.formData.examCode = examStore.generateExamCode()
+    examStore.formData.description='1. 本次考试为线上闭卷考试，请在规定时间内独立完成，不得与他人交流或使用任何未授权的资料。\n' +
+        '2. 考试开始后请勿刷新页面、关闭浏览器或切换至其他应用，否则可能导致考试中断或成绩异常。\n' +
+        '3. 请在考试开始前检查网络环境及设备状态，确保摄像头、键盘及浏览器运行正常。\n' +
+        '4. 考试过程中请严格遵守考试纪律，如发现作弊行为，成绩将按无效处理。\n' +
+        '5. 请合理安排作答时间，系统将在考试结束时自动提交试卷，未提交的作答将无法计入成绩。\n' +
+        '6. 若考试过程中出现异常情况，请及时联系监考人员或管理员。\n' +
+        '7. 本次考试的最终解释权归考试组织方所有。'
+  }
+})
+//重新生成试卷码
+const regenerateExamCode=()=>{
+  examStore.formData.examCode = examStore.generateExamCode()
+}
 
 const next = () => {
   if (active.value < 2) {
@@ -441,6 +471,10 @@ const prev = () => {
 }
 
 const handleSubmit = () => {
+  if (!examStore.formData.examCode) {
+    ElMessage.error('试卷码未生成')
+    return
+  }
   ElMessage.success('考试发布成功！')
   console.log('提交的数据：', formData.value)
 }
