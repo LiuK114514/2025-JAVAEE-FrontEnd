@@ -3,18 +3,22 @@ import Header from './Header.vue'
 import Menu from './Menu.vue'
 import { menuWidthStore } from "../../stores/menu.js";
 const menuStore = menuWidthStore()
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+const route = useRoute()
+const isFullscreen = computed(() => route.meta.fullscreen === true)
 </script>
 
 <template>
   <el-container>
-    <el-header>
-      <Header></Header>
+    <el-header v-if="!isFullscreen"  >
+      <Header style="z-index: 100" ></Header>
     </el-header>
     <el-container>
-        <el-aside :width="menuStore.menuWidth">
-          <Menu></Menu>
+        <el-aside v-if="!isFullscreen"  :width="menuStore.menuWidth">
+          <Menu ></Menu>
         </el-aside>
-        <el-main>
+        <el-main style=" background:#EBEDF0; ">
         <router-view></router-view>
         </el-main>
     </el-container>
@@ -22,5 +26,10 @@ const menuStore = menuWidthStore()
 </template>
 
 <style scoped>
+
+
+.el-main {
+  height: calc(100vh - 60px);
+}
 
 </style>

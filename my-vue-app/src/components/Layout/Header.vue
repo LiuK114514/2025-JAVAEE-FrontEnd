@@ -291,14 +291,16 @@ const handleCommand = (c) => {
   align-items: center;
   height: 70px;
   padding: 0 40px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  background: linear-gradient(135deg, #1e3c72 0%, #2a9d8f 100%);
+  box-shadow: 0 4px 14px rgba(30, 60, 114, 0.35);
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
+  z-index: 100;
 }
 
+/* 左侧 */
 .header-left {
   display: flex;
   align-items: center;
@@ -306,14 +308,14 @@ const handleCommand = (c) => {
 }
 
 .logo-icon {
-  width: 56px;
-  height: 56px;
-  background: rgba(255, 255, 255, 0.2);
+  width: 54px;
+  height: 54px;
+  background: rgba(255, 255, 255, 0.18);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: #ffffff;
   backdrop-filter: blur(10px);
 }
 
@@ -326,16 +328,17 @@ const handleCommand = (c) => {
 .title {
   font-size: 22px;
   font-weight: 600;
-  color: white;
+  color: #ffffff;
   letter-spacing: 1px;
 }
 
 .subtitle {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255, 255, 255, 0.8);
   font-weight: 300;
 }
 
+/* 右侧用户区 */
 .header-right {
   display: flex;
   align-items: center;
@@ -349,18 +352,18 @@ const handleCommand = (c) => {
   padding: 8px 16px;
   border-radius: 10px;
   transition: all 0.3s;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.18);
   backdrop-filter: blur(10px);
 }
 
 .el-dropdown-link:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.28);
   transform: translateY(-2px);
 }
 
 .username {
   font-size: 15px;
-  color: white;
+  color: #ffffff;
   font-weight: 500;
   max-width: 120px;
   overflow: hidden;
@@ -369,67 +372,73 @@ const handleCommand = (c) => {
 }
 
 .el-dropdown-link .el-icon {
-  color: white;
+  color: #ffffff;
+  font-size: 18px;
 }
 
+/* 下拉菜单 */
 :deep(.el-dropdown-menu__item) {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 12px 20px;
   font-size: 14px;
+  transition: all 0.2s;
 }
 
 :deep(.el-dropdown-menu__item:hover) {
-  background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
-  color: #667eea;
+  background: rgba(42, 157, 143, 0.12);
+  color: #2a9d8f;
 }
 
-/* 对话框样式 */
+/* 修改密码弹窗 */
 :deep(.password-dialog) {
   border-radius: 16px;
   overflow: hidden;
 }
 
+/* 弹窗头部 */
 :deep(.password-dialog .el-dialog__header) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1e3c72 0%, #2a9d8f 100%);
   padding: 20px 24px;
   margin: 0;
 }
 
 :deep(.password-dialog .el-dialog__title) {
-  color: white;
+  color: #ffffff;
   font-size: 18px;
   font-weight: 600;
 }
 
 :deep(.password-dialog .el-dialog__headerbtn .el-dialog__close) {
-  color: white;
+  color: #ffffff;
   font-size: 20px;
 }
 
+/* 弹窗内容 */
 :deep(.password-dialog .el-dialog__body) {
   padding: 30px 24px;
 }
 
 :deep(.password-dialog .el-form-item__label) {
-  color: #606266;
+  color: #374151;
   font-weight: 500;
 }
 
 :deep(.password-dialog .el-input__wrapper) {
   border-radius: 8px;
-  box-shadow: 0 0 0 1px #dcdfe6 inset;
+  box-shadow: 0 0 0 1px #e5e7eb inset;
 }
 
 :deep(.password-dialog .el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px #c0c4cc inset;
+  box-shadow: 0 0 0 1px #cbd5e1 inset;
 }
 
 :deep(.password-dialog .el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px #667eea inset;
+  box-shadow: 0 0 0 1px #2a9d8f inset;
 }
 
+/* 弹窗底部 */
 .dialog-footer {
   display: flex;
   gap: 12px;
@@ -442,13 +451,15 @@ const handleCommand = (c) => {
   font-weight: 500;
 }
 
+/* 主按钮 */
 .submit-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1e3c72 0%, #2a9d8f 100%);
   border: none;
 }
 
 .submit-btn:hover {
-  opacity: 0.9;
+  opacity: 0.92;
   transform: translateY(-2px);
 }
+
 </style>

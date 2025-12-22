@@ -160,7 +160,8 @@
 import { ref } from 'vue'
 import { ElMessage ,ElNotification} from 'element-plus'
 import {login} from "../../api/login.js";
-
+import {useUserStore} from '../../stores/userStore.js'
+const userStore = useUserStore()
 const activeTab = ref('login')
 const loginForm = ref({ email: '', password: '' })
 const registerForm = ref({ email: '',realname:'', password: '', confirm: '',code: '' })
@@ -290,6 +291,7 @@ const onSubmit = () => {
               message:"登陆成功",
               duration: 1500
             })
+            userStore.initUser()
             //存cookie
             //跳转
           })
