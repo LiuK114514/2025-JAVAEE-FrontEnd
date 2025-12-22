@@ -6,7 +6,8 @@ import Layout from '../components/Layout/layout.vue'
 import PublishedExams from '../pages/publishedExams.vue'
 import AnswerExam from '../pages/answerExam.vue'
 import GradingPaper from '../pages/gradePaper.vue'
-
+import MyExams from "../pages/myExams.vue";
+import Review from '../pages/reviewPaper.vue'
 const routes = [
     { path: '/',
       component: Layout,
@@ -29,7 +30,7 @@ const routes = [
           {
               path:'answerExam',
               component:AnswerExam,
-              meta: {title: "我参与的考试"}
+              meta: {title: "参与考试"}
           },
           {
               path: 'answerExam/:id',
@@ -44,6 +45,19 @@ const routes = [
               component: GradingPaper,
               meta: {
                   title: '试卷批改',
+                  fullscreen: true
+              }
+          },
+          {
+            path: 'myExams',
+            component: MyExams,
+            meta: {title: "我参与的考试"}
+          },
+          {
+              path: 'review/:examId',
+              component: Review,
+              meta: {
+                  title: '试卷查看',
                   fullscreen: true
               }
           },

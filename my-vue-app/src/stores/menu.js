@@ -12,7 +12,7 @@ export const menuWidthStore = defineStore("menuWidth" , {
             { index: '3', path: '/answerExam', name: '参与考试' },
             { index: '4', path: '/#', name: '查看试卷' },
             { index: '4-1', path: '/publishedExams', name: '我发布的' },
-            { index: '4-2', path: '/#', name: '我参与的' },
+            { index: '4-2', path: '/myExams', name: '我参与的' },
 
         ],
     }),

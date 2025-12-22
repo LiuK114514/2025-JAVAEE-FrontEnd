@@ -21,7 +21,7 @@ export const useGradeStore = defineStore('grade', () => {
     const isLoading = ref(false)
 
     // 初始化批改数据（前端传入题目和学生答案）
-    const initGrading = (pId, eId,questions, userAnswers,pData) => {
+    const initGrading = (pId, eId,questions, userAnswers) => {
         paperId.value = pId
         examId.value = eId
         // 深拷贝题目，避免修改原始数据
@@ -38,7 +38,6 @@ export const useGradeStore = defineStore('grade', () => {
         // 自动评分客观题
         autoGradeObjectiveQuestions()
     }
-
     // 自动评分客观题（单选、多选、判断）
     const autoGradeObjectiveQuestions = () => {
         currentGrading.value.questions.forEach((q, index) => {
@@ -225,9 +224,10 @@ export const useGradeStore = defineStore('grade', () => {
         return {
             paperId: id,
             studentName: '张三',
-            answers: ['B',['A','B'], 'proxy', 'false','555']
+            answers: ['C',['A','C'], 'proxy', 'false','555']
         }
     }
+
     return {
         currentGrading,
         questionScores,

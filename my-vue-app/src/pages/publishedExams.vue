@@ -137,6 +137,17 @@
               <el-icon><DataAnalysis /></el-icon>
               统计分析
             </el-button>
+
+            <!-- 异常行为审查 -->
+            <el-button type="danger" plain @click="viewAbnormalLogs(exam)">
+              <el-icon><Warning /></el-icon>
+              异常行为审查
+              <el-badge
+                  v-if="exam.abnormalList && exam.abnormalList.length > 0"
+                  :value="exam.abnormalList.length"
+                  class="badge-item"
+              />
+            </el-button>
           </template>
 
           <el-button
@@ -314,15 +325,6 @@
             >
               开始批阅
             </el-button>
-<!--            <el-button-->
-<!--                v-else-->
-<!--                type="info"-->
-<!--                size="small"-->
-<!--                plain-->
-<!--                @click="viewGradingDetail(row)"-->
-<!--            >-->
-<!--              查看详情-->
-<!--            </el-button>-->
           </template>
         </el-table-column>
       </el-table>
@@ -338,53 +340,6 @@
         />
       </div>
     </el-card>
-
-<!--    &lt;!&ndash; 查看详情对话框 - 全屏模式 &ndash;&gt;-->
-<!--    <el-dialog-->
-<!--        v-model="showDetailDialog"-->
-<!--        title="批改详情"-->
-<!--        fullscreen-->
-<!--    >-->
-<!--      <div v-if="showDetailDialog" class="detail-dialog-content">-->
-<!--        &lt;!&ndash; 学生信息和成绩卡片 &ndash;&gt;-->
-<!--        <el-card class="result-card" shadow="never">-->
-<!--          <div class="result-header">-->
-<!--            <div class="student-info">-->
-<!--              <h3>{{ currentStudent?.name }}</h3>-->
-<!--              <p>邮箱: {{ currentStudent?.email }}</p>-->
-<!--              <p>提交时间: {{ currentStudent?.submitTime }}</p>-->
-<!--            </div>-->
-<!--            <div class="score-display">-->
-<!--              <div class="score-number" :class="getScoreClass(currentStudent?.score, selectedExam?.totalScore)">-->
-<!--                {{ currentStudent?.score }}-->
-<!--              </div>-->
-<!--              <div class="score-label">总分: {{ selectedExam?.totalScore }}</div>-->
-<!--              <el-tag-->
-<!--                  :type="getScoreTagType(currentStudent?.score, selectedExam?.totalScore)"-->
-<!--                  size="large"-->
-<!--              >-->
-<!--                {{ calculatePercentage(currentStudent?.score, selectedExam?.totalScore) }}%-->
-<!--              </el-tag>-->
-<!--            </div>-->
-<!--          </div>-->
-
-<!--          &lt;!&ndash; 批改评语 &ndash;&gt;-->
-<!--          <el-divider />-->
-<!--          <div v-if="currentStudent?.comment" class="comment-section">-->
-<!--            <h4>批改评语</h4>-->
-<!--            <div class="comment-content">{{ currentStudent.comment }}</div>-->
-<!--          </div>-->
-<!--        </el-card>-->
-
-<!--        &lt;!&ndash; 答题详情 &ndash;&gt;-->
-<!--        <AnswerCard-->
-<!--            mode="review"-->
-<!--            :exam-data="detailExamData"-->
-<!--            :initial-answers="detailAnswers"-->
-<!--            @close="showDetailDialog = false"-->
-<!--        />-->
-<!--      </div>-->
-<!--    </el-dialog>-->
 
     <!-- 统计视图 -->
     <el-card v-if="activeView === 'statistics' && selectedExam" class="statistics-card">
@@ -449,11 +404,135 @@
         </div>
       </div>
     </el-card>
+
+    <!-- 异常行为日志视图 -->
+    <el-card
+        v-if="activeView === 'abnormal' && selectedExam"
+        class="abnormal-card"
+    >
+      <!-- 搜索和筛选栏 -->
+      <el-card class="search-card" shadow="never">
+        <el-form
+            :inline="true"
+            :model="examStore.abnormalSearchForm"
+            class="search-form"
+        >
+          <!-- 按考生姓名 -->
+          <el-form-item label="考生姓名">
+            <el-input
+                v-model="examStore.abnormalSearchForm.name"
+                placeholder="请输入考生姓名"
+                clearable
+                style="width: 200px"
+                @clear="examStore.displayLogs"
+            >
+              <template #prefix>
+                <el-icon><Search /></el-icon>
+              </template>
+            </el-input>
+          </el-form-item>
+
+          <!-- 按异常类型 -->
+          <el-form-item label="异常类型">
+            <el-select
+                v-model="examStore.abnormalSearchForm.type"
+                placeholder="全部类型"
+                clearable
+                style="width: 180px"
+                @change="examStore.filterAbnormalLogs"
+            >
+              <el-option label="退出全屏" value="FULLSCREEN_EXIT" />
+              <el-option label="窗口失焦" value="WINDOW_BLUR" />
+              <el-option label="标签页隐藏" value="TAB_HIDDEN" />
+              <el-option label="复制行为" value="COPY" />
+              <el-option label="右键点击" value="RIGHT_CLICK" />
+              <el-option label="粘贴行为" value="PASTE" />
+            </el-select>
+          </el-form-item>
+
+          <!-- 重置 -->
+          <el-form-item>
+            <el-button @click="examStore.resetAbnormalSearchForm">
+              <el-icon><RefreshRight /></el-icon>
+              重置
+            </el-button>
+          </el-form-item>
+        </el-form>
+      </el-card>
+
+      <!-- 头部 -->
+      <template #header>
+        <div class="card-header">
+          <h2>异常行为日志 - {{ selectedExam.examName }}</h2>
+          <el-button @click="backToList">返回列表</el-button>
+        </div>
+      </template>
+
+      <!-- 统计提示 -->
+      <el-alert
+          type="warning"
+          :closable="false"
+          show-icon
+          class="progress-alert"
+      >
+        <template #title>
+          本场考试共记录
+          <strong>{{ examStore.abnormalList.length }}</strong>
+          条异常行为
+        </template>
+      </el-alert>
+
+      <!-- 空状态 -->
+      <el-empty
+          v-if="examStore.displayLogs.length === 0"
+          description="暂无异常行为记录"
+          :image-size="200"
+      />
+
+      <!-- 表格 -->
+      <el-table
+          v-else
+          :data="examStore.displayLogs"
+          stripe
+          style="margin-top: 20px"
+      >
+        <el-table-column type="index" label="序号" width="60" />
+        <el-table-column prop="name" label="姓名" min-width="100" />
+        <el-table-column prop="email" label="邮箱" min-width="150" />
+        <el-table-column label="异常类型" width="140">
+          <template #default="{ row }">
+            <el-tag type="danger">
+              {{examStore.abnormalTypeText[row.behaviorType] }}
+            </el-tag>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="occurTime" label="发生时间" min-width="170" />
+        <el-table-column prop="remark" label="备注" min-width="220">
+          <template #default="{ row }">
+            <span v-if="row.remark">{{ row.remark }}</span>
+            <span v-else style="color:#999">-</span>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <!-- 分页 -->
+      <div class="pagination-wrapper" style="text-align:center;margin-top:20px;">
+        <el-pagination
+            background
+            layout="prev, pager, next, jumper"
+            :total="examStore.abnormalList.length"
+            :page-size="examStore.logPagination.pageSize"
+            :current-page.sync="examStore.logPagination.currentPage"
+            @current-change="handleAbnormalPageChange"
+        />
+      </div>
+    </el-card>
   </div>
 </template>
 
 <script setup>
-import {onMounted, ref, watch} from 'vue'
+import {onActivated, onMounted, ref, watch} from 'vue'
 import {ArrowDown, ArrowUp} from "@element-plus/icons-vue";
 import { useExamStore } from '../stores/examStore'
 import { useGradeStore } from '../stores/gradeStore'
@@ -461,6 +540,8 @@ import { useAnswerCardStore } from "../stores/answerCardStore.js";
 import AnswerCard from "../components/answerCard.vue";
 import router from "../router/router.js";
 import {ElMessage} from "element-plus";
+import {onBeforeRouteUpdate} from "vue-router";
+import {START_LOCATION_NORMALIZED as route} from "vue-router/dist/devtools-BLCumUwL.mjs";
 
 const examStore = useExamStore()
 const gradeStore = useGradeStore()
@@ -473,6 +554,14 @@ const expandedExamId = ref(null)
 onMounted(() => {
   examStore.fetchPublishedExams()
 })
+watch(
+    () => route.fullPath,
+    () => {
+      examStore.fetchPublishedExams()
+    },
+    { immediate: true }
+)
+
 //换页
 //换页后回滚到顶部
 const handleExamChange=(page)=>{
@@ -481,6 +570,9 @@ const handleExamChange=(page)=>{
 }
 const handleGradeChange=(grade)=>{
   examStore.gradingPagination.currentPage = grade
+}
+const handleAbnormalPageChange=(page)=>{
+  examStore.logPagination.currentPage= page
 }
 
 // 切换设置面板
@@ -501,7 +593,14 @@ const viewStatistics = (exam) => {
   examStore.fetchStatistics(exam.id)
   activeView.value = 'statistics'
 }
-
+//查看异常行为日志
+function viewAbnormalLogs(exam) {
+  // 可以弹出一个对话框或跳转到异常行为详情页
+  // 例：打开弹窗
+  activeView.value = 'abnormal'
+  selectedExam.value = exam
+  examStore.fetchAbnormalLogs(exam.id)  // 调用后端接口获取该场考试异常日志
+}
 // 返回列表
 const backToList = () => {
   activeView.value = 'list'

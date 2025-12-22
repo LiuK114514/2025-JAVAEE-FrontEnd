@@ -3,7 +3,15 @@ import {computed, ref} from 'vue'
 
 export const useExamStore = defineStore('exam', () => {
 
-
+    //异常行为记录
+    const abnormalList = ref([])
+    function reportAbnormal(type, remark = '') {
+        abnormalList.value.push({
+            behaviorType: type,
+            occurTime: new Date().toLocaleString(),
+            remark
+        })
+    }
     // 试卷基本信息
     const formData = ref({
         examCode: '',// 试卷码
@@ -83,13 +91,13 @@ export const useExamStore = defineStore('exam', () => {
         }
     }
     //生成试卷码
-    function generateExamCode(length = 6) {
-        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-        let code = ''
-        for (let i = 0; i < length; i++) {
-            code += chars.charAt(Math.floor(Math.random() * chars.length))
-        }
-        return code
+    function generateExamCode() {
+        const timePart = Date.now().toString().slice(-6) // 毫秒时间戳
+        const randomPart = Math.floor(Math.random() * 100)
+            .toString()
+            .padStart(2, '0')
+
+        return timePart + randomPart
     }
     // 添加选项
     const addOption = () => {
@@ -135,16 +143,33 @@ export const useExamStore = defineStore('exam', () => {
     //当前选中的考试（查看详情/批阅/统计）
     const selectedExam = ref(null)
     // 搜索筛选条件
+    //考试页搜索
     const examsearchForm = ref({
         examName: '',
         status: '',
         dateRange: null
     })
+    //批阅页搜索
     const gradesearchForm = ref({
         name: '',        // 按学生姓名搜索
         email: '',   // 按邮箱搜索
         status: ''       // 按状态过滤：graded / ungraded
     })
+    //日志搜索
+    const abnormalSearchForm = ref({
+        name: '',
+        type: ''
+    })
+
+    const abnormalTypeText = {
+        FULLSCREEN_EXIT: '退出全屏',
+        WINDOW_BLUR: '窗口失焦',
+        TAB_HIDDEN: '标签页隐藏',
+        COPY: '复制行为',
+        RIGHT_CLICK: '右键点击',
+        PASTE:'粘贴行为'
+    }
+
     const getTagType = (status) => {
         switch(status) {
             case 'upcoming': return 'primary';  // 未开始
@@ -171,6 +196,12 @@ export const useExamStore = defineStore('exam', () => {
     })
     //批改页面分页
     const gradingPagination = ref({
+        currentPage: 1,
+        pageSize: 10,
+        total: 1
+    })
+    //日志分页
+    const logPagination = ref({
         currentPage: 1,
         pageSize: 10,
         total: 1
@@ -250,8 +281,38 @@ export const useExamStore = defineStore('exam', () => {
         const start = (gradingPagination.value.currentPage - 1) * gradingPagination.value.pageSize
         return filteredSubmissions.value.slice(start, start + gradingPagination.value.pageSize)
     })
+    //筛选日志
+    const filterAbnormalLogs = computed(()=> {
+        let list = abnormalList.value
 
+        // 按姓名过滤
+        if (abnormalSearchForm.value.name) {
+            list = list.filter(item =>
+                item.name?.includes(abnormalSearchForm.value.name)
+            )
+        }
 
+        // 按异常类型过滤
+        if (abnormalSearchForm.value.type) {
+            list = list.filter(item =>
+                item.behaviorType === abnormalSearchForm.value.type
+            )
+        }
+
+        // 更新总数
+        logPagination.value.total = list.length
+        return list
+    })
+    //显示筛选的日志
+    const displayLogs = computed(() => {
+        const start = (logPagination.value.currentPage - 1) * logPagination.value.pageSize
+        return filterAbnormalLogs.value.slice(start, start + logPagination.value.pageSize)
+    })
+    function resetAbnormalSearchForm() {
+        abnormalSearchForm.value.name = ''
+        abnormalSearchForm.value.type = ''
+        logPagination.value.currentPage = 1
+    }
     // 获取已发布考试列表
     const fetchPublishedExams = async () => {
         // TODO: API
@@ -479,6 +540,411 @@ export const useExamStore = defineStore('exam', () => {
             { range: '80-90', count: 15, percentage: 16.5 }
         ]
     }
+    //获取我参与的考试
+    const fetchMyExams =()=>{
+        allExams.value = [
+        {
+            id: 1,
+            examName: '数学期末考试',
+            examCode: 'MATH202512',
+            startDate: '2025-12-25',
+            startTime: '09:00',
+            duration: 90,
+            status: 'ended',
+            hasSubmitted: true,
+            usedTime: 85,
+            score: 92,
+            showAnswers: true
+        },
+        {
+            id: 2,
+            examName: '英语听力考试',
+            examCode: 'ENG202512',
+            startDate: '2025-12-26',
+            startTime: '14:00',
+            duration: 60,
+            status: 'ongoing',
+            hasSubmitted: false,
+            usedTime: null,
+            score: null,
+            showAnswers: false
+        },
+        {
+            id: 3,
+            examName: '物理实验测试',
+            examCode: 'PHY202512',
+            startDate: '2025-12-28',
+            startTime: '10:00',
+            duration: 120,
+            status: 'ended',
+            hasSubmitted: false,
+            usedTime: null,
+            score: null,
+            showAnswers: false
+        },
+            {
+                id: 4,
+                examName: '物理实验测试',
+                examCode: 'PHY202512',
+                startDate: '2025-12-28',
+                startTime: '10:00',
+                duration: 120,
+                status: 'ended',
+                hasSubmitted: false,
+                usedTime: null,
+                score: null,
+                showAnswers: false
+            },
+            {
+                id: 5,
+                examName: '物理实验测试',
+                examCode: 'PHY202512',
+                startDate: '2025-12-28',
+                startTime: '10:00',
+                duration: 120,
+                status: 'ended',
+                hasSubmitted: false,
+                usedTime: null,
+                score: null,
+                showAnswers: false
+            },
+            {
+                id: 6,
+                examName: '物理实验测试',
+                examCode: 'PHY202512',
+                startDate: '2025-12-28',
+                startTime: '10:00',
+                duration: 120,
+                status: 'ended',
+                hasSubmitted: false,
+                usedTime: null,
+                score: null,
+                showAnswers: false
+            }
+    ]
+    }
+    //获取这场考试的题目
+    async function fetchReviewPaper  (examId){
+        // const res = await api.get(`/exam/review/${examId}`)
+        // return res.data
+        return {
+            // id: 1001,
+            // examCode: '123456',
+            // examName: '2024年度 JavaScript 基础知识测试',
+            // creatorName: '刘康',
+            // description: '本试卷用于测试 JavaScript 基础知识，涵盖变量、函数、对象、异步机制等核心内容。',
+            // startDate: '2024-12-15',
+            // startTime: '09:00',
+            // duration: 90,
+            // totalScore: 100,
+            // showAnswers: true,
+            // status: 'ended',
+            // createTime: 1702345678000,
+            // updateTime: 1702345678000,
+            // questions: [
+            //     /* 单选题 */
+            //     {
+            //         id: 1,
+            //         type: 'single',
+            //         score: 5,
+            //         content: 'Vue 的核心特性是？',
+            //         options: [
+            //             '单向数据流',
+            //             '双向数据绑定',
+            //             '直接操作 DOM',
+            //             '模板字符串'
+            //         ],
+            //         answer: 'B',
+            //         analysis: 'const 用于声明常量，声明后必须初始化，且不能被重新赋值。'
+            //     },
+            //     {
+            //         id: 2,
+            //         type: 'multiple',
+            //         score: 5,
+            //         content: '以下哪些属于 Vue 的核心特性？',
+            //         options: [
+            //             '组件化',
+            //             '响应式系统',
+            //             '虚拟 DOM',
+            //             '强制使用 TypeScript'
+            //         ],
+            //         analysis: 'join() 方法会把数组中的所有元素连接成一个字符串。'
+            //     },
+            //
+            //     /* 多选题 */
+            //     {
+            //         id: 3,
+            //         type: 'fill',
+            //         score: 10,
+            //         content: 'Vue3 中使用 ____ 对象实现响应式系统。',
+            //         answer: 'Proxy',
+            //         analysis: '基本数据类型包括 String、Number、Boolean、Symbol、Null、Undefined（以及 BigInt）。'
+            //     },
+            //
+            //     /* 判断题 */
+            //     {
+            //         id: 4,
+            //         type: 'judge',
+            //         score: 5,
+            //         content: '在 Vue3 中，ref 只能用于基本数据类型。',
+            //         answer: 'true' ,  // 或 true，按你系统约定
+            //         analysis: '== 会进行类型转换，而 === 不会，要求类型和值都相同。'
+            //     },
+            //
+            //     /* 填空题 */
+            //     {
+            //         id: 5,
+            //         type: 'essay',
+            //         score: 15,
+            //         content: '请简述 Vue3 响应式系统的实现原理。',
+            //         answer: 'Vue3 基于 ES6 的 Proxy 对对象进行代理，拦截数据的读取和修改操作，在依赖收集与触发更新阶段实现高效的响应式更新机制。',
+            //         analysis: 'ES6 引入了 class 关键字，使面向对象编程语法更加清晰。'
+            //     },
+            // ]
+            examId: examId,
+            examName: '前端开发基础测试',
+            totalScore: 40,
+            questions: [
+                // 单选题
+                {
+                    id: 1,
+                    type: 'single',
+                    score: 5,
+                    content: 'Vue 的核心特性是？',
+                    options: [
+                        '单向数据流',
+                        '双向数据绑定',
+                        '直接操作 DOM',
+                        '模板字符串'
+                    ],
+                    answer: 'B'
+                },
+
+                // 多选题
+                {
+                    id: 2,
+                    type: 'multiple',
+                    score: 5,
+                    content: '以下哪些属于 Vue 的核心特性？',
+                    options: [
+                        '组件化',
+                        '响应式系统',
+                        '虚拟 DOM',
+                        '强制使用 TypeScript'
+                    ],
+                    answer: ['A','B','D']
+                },
+
+                // 填空题
+                {
+                    id: 3,
+                    type: 'fill',
+                    score: 10,
+                    content: 'Vue3 中使用 ____ 对象实现响应式系统。',
+                    answer: 'Proxy'
+                },
+
+                // 判断题
+                {
+                    id: 4,
+                    type: 'judge',
+                    score: 5,
+                    content: '在 Vue3 中，ref 只能用于基本数据类型。',
+                    answer: 'true'   // 或 true，按你系统约定
+                },
+
+                // 简答题
+                {
+                    id: 5,
+                    type: 'essay',
+                    score: 15,
+                    content: '请简述 Vue3 响应式系统的实现原理。',
+                    answer: 'Vue3 基于 ES6 的 Proxy 对对象进行代理，拦截数据的读取和修改操作，在依赖收集与触发更新阶段实现高效的响应式更新机制。'
+                }
+            ]
+        }
+    }
+    // //获取我的答卷
+    async function fetchMyAnswer (examId){
+        return {
+            // studentName: '张三',        // 学生姓名
+            // studentExamId: 2001,       // 对应 tester_exam.id
+            // examId: 1001,              // 对应考试ID
+            // startTime: '2024-12-15 09:00',  // 开始作答时间
+            // submitTime: '2024-12-15 10:30', // 提交时间
+            // duration: 90,              // 实际耗时(分钟)
+            // totalScore: 85,            // 最终得分
+            // status: 2,                 // 状态 0未开始 1作答中 2已提交
+            // answers: [
+            //     {
+            //         questionId: 1,         // 对应题目ID
+            //         type: 'single',        // 题目类型 single/multiple/judge/fill/essay
+            //         studentAnswer: 'B',    // 学生答案
+            //         autoScore: 0,          // 客观题自动评分
+            //         teacherScore: 0,       // 主观题人工评分
+            //         finalScore: 0,         // 最终得分
+            //         isReviewed: 1          // 是否已批阅（0未批 1已批）
+            //     },
+            //     {
+            //         questionId: 2,
+            //         type: 'multiple',
+            //         studentAnswer: ['A', 'C'],
+            //         autoScore: 5,
+            //         teacherScore: 0,
+            //         finalScore: 5,
+            //         isReviewed: 1
+            //     },
+            //     {
+            //         questionId: 3,
+            //         type: 'judge',
+            //         studentAnswer: 'true',
+            //         autoScore: 5,
+            //         teacherScore: 0,
+            //         finalScore: 5,
+            //         isReviewed: 1
+            //     },
+            //     {
+            //         questionId: 4,
+            //         type: 'fill',
+            //         studentAnswer: 'class',
+            //         autoScore: 10,
+            //         teacherScore: 0,
+            //         finalScore: 10,
+            //         isReviewed: 1
+            //     },
+            //     {
+            //         questionId: 5,
+            //         type: 'essay',
+            //         studentAnswer: '事件循环是JavaScript的核心...',
+            //         autoScore: 0,
+            //         teacherScore: 15,
+            //         finalScore: 15,
+            //         isReviewed: 1
+            //     }
+            // ]
+
+            paperId: examId,
+            studentName: '张三',
+            answers: ['B',['A','B'], 'proxy', 'false','555']
+        }
+    }
+
+    //获取日常行为日志
+    const fetchAbnormalLogs=async (examId)=>{
+        // 模拟后端返回的数据
+        const mockData = [
+            {
+                id: 1,
+                userId: 101,
+                name: '张三',
+                email: 'zhangsan@example.com',
+                behaviorType: 'RIGHT_CLICK',
+                occurTime: '2025-12-20 09:15:32',
+                remark: '考试过程中多次右键'
+            },
+            {
+                id: 2,
+                userId: 102,
+                name: '李四',
+                email: 'lisi@example.com',
+                behaviorType: 'TAB_HIDDEN',
+                occurTime: '2025-12-20 09:18:01',
+                remark: '切换到其他标签页'
+            },
+            {
+                id: 3,
+                userId: 101,
+                name: '张三',
+                email: 'zhangsan@example.com',
+                behaviorType: 'FULLSCREEN_EXIT',
+                occurTime: '2025-12-20 09:20:45',
+                remark: '退出全屏模式'
+            },
+            {
+                id: 4,
+                userId: 103,
+                name: '王五',
+                email: 'wangwu@example.com',
+                behaviorType: 'COPY',
+                occurTime: '2025-12-20 09:25:12',
+                remark: '复制试题内容'
+            },
+            {
+                id: 5,
+                userId: 102,
+                name: '李四',
+                email: 'lisi@example.com',
+                behaviorType: 'WINDOW_BLUR',
+                occurTime: '2025-12-20 09:27:54',
+                remark: '窗口失去焦点'
+            },
+            {
+                id: 6,
+                userId: 101,
+                name: '张三',
+                email: 'zhangsan@example.com',
+                behaviorType: 'RIGHT_CLICK',
+                occurTime: '2025-12-20 09:30:10',
+                remark: '再次右键'
+            },
+            {
+                id: 7,
+                userId: 101,
+                name: '张三',
+                email: 'zhangsan@example.com',
+                behaviorType: 'RIGHT_CLICK',
+                occurTime: '2025-12-20 09:15:32',
+                remark: '考试过程中多次右键'
+            },
+            {
+                id: 8,
+                userId: 102,
+                name: '李四',
+                email: 'lisi@example.com',
+                behaviorType: 'TAB_HIDDEN',
+                occurTime: '2025-12-20 09:18:01',
+                remark: '切换到其他标签页'
+            },
+            {
+                id: 9,
+                userId: 101,
+                name: '张三',
+                email: 'zhangsan@example.com',
+                behaviorType: 'FULLSCREEN_EXIT',
+                occurTime: '2025-12-20 09:20:45',
+                remark: '退出全屏模式'
+            },
+            {
+                id: 10,
+                userId: 103,
+                name: '王五',
+                email: 'wangwu@example.com',
+                behaviorType: 'COPY',
+                occurTime: '2025-12-20 09:25:12',
+                remark: '复制试题内容'
+            },
+            {
+                id: 11,
+                userId: 102,
+                name: '李四',
+                email: 'lisi@example.com',
+                behaviorType: 'WINDOW_BLUR',
+                occurTime: '2025-12-20 09:27:54',
+                remark: '窗口失去焦点'
+            },
+            {
+                id: 12,
+                userId: 101,
+                name: '张三',
+                email: 'zhangsan@example.com',
+                behaviorType: 'RIGHT_CLICK',
+                occurTime: '2025-12-20 09:30:10',
+                remark: '再次右键'
+            }
+        ]
+
+        abnormalList.value = mockData
+    }
     //提交批阅结果
     const submitGrading = async (submissionId, data) => {
         console.log('提交批阅:', submissionId, data)
@@ -506,7 +972,8 @@ export const useExamStore = defineStore('exam', () => {
     }
     // ==================== 返回 ====================
     return {
-        // 试卷设置模块
+        abnormalList,
+        reportAbnormal,
         formData,
         typeLabelMap,
         typeTagMap,
@@ -526,26 +993,34 @@ export const useExamStore = defineStore('exam', () => {
         selectedExam,
         examsearchForm,
         gradesearchForm,
+        abnormalSearchForm,
+        abnormalTypeText,
         getTagType,
         getTagText,
         pagination,
         gradingPagination,
+        logPagination,
         studentSubmissions,
         examStatistics,
         scoreDistribution,
         filteredExams,
         displayExams,
-        // handleExamChange,
-        // handleGradeChange,
         filteredSubmissions,
         displaySubmissions,
+        displayLogs,
+        filterAbnormalLogs,
         fetchPublishedExams,
         fetchExamDetail,
         fetchSubmissions,
         fetchStatistics,
+        fetchMyExams,
+        fetchAbnormalLogs,
+        fetchReviewPaper,
+        fetchMyAnswer,
         submitGrading,
         resetExamesearchForm,
         resetGradesearchForm,
-        resetPublishedExamState
+        resetPublishedExamState,
+        resetAbnormalSearchForm
     }
 })
