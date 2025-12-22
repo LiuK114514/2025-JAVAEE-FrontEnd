@@ -3,9 +3,9 @@
 </script>
 
 <template>
- <div>
-   后台首页
- </div>
+  <div>
+    参与考试
+  </div>
 </template>
 
 <style scoped>

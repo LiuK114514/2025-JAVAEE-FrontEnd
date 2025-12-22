@@ -1,7 +1,7 @@
 <script setup>
 import loginRegister from './pages/loginRegister/loginRegister.vue'
 import Layout from "./components/Layout/layout.vue";
-
+import router from './router/router';
 </script>
 
 <template>

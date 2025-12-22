@@ -1,6 +1,5 @@
 <script setup>
 import {ref} from "vue";
-
 import { menuWidthStore } from "../../stores/menu.js";
 const menuStore = menuWidthStore()
 
