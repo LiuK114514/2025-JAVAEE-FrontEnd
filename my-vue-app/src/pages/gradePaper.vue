@@ -7,7 +7,7 @@
         <div class="header-left">
 <!--          <h2>{{ examData.examName }}</h2>-->
           <span class="student-info">
-            考生：{{ paperData.studentName }}
+            考生：{{studentName }}
           </span>
         </div>
 
@@ -28,6 +28,7 @@
           mode="grade"
           :exam-data="examData"
           :initial-answers="paperData.answers"
+          @submitGrade="submitGrading"
       />
     </div>
   </div>
@@ -39,14 +40,13 @@ import AnswerCard from '../components/answerCard.vue'
 import { ElMessage } from 'element-plus'
 import { useAnswerCardStore } from '../stores/answerCardStore.js'
 import {useGradeStore} from "../stores/gradeStore.js";
+import {getGradePaper, getReviewPaper} from "../api/exam.js";
 const gradeStore = useGradeStore()
 const answerCardStore = useAnswerCardStore()
 const route = useRoute()
 const router = useRouter()
 
-// 从路由获取参数
-const examId = route.params.examId
-const paperId = route.params.paperId
+
 
 // examData：试卷信息
 const examData = ref({
@@ -59,28 +59,105 @@ const examData = ref({
 // paperData：学生答卷信息
 const paperData = ref({
   paperId: null,
-  studentName: '',
+
   answers: [] // 学生作答数组
 })
+const studentName = ref({})
+const isGraded=ref({})
+function normalizeAnswer(answer, type) {
+  if (answer == null) return null
 
+  // 多选题
+  if (type === 2 || type === 'multiple') {
+    return Array.isArray(answer)
+        ? answer
+        : String(answer)
+            .replace(/,/g, '')
+            .split('')
+  }
+  // 判断题
+  if (type === 4 || type === 'judge') {
+    return String(answer).toLowerCase() === 'true'
+  }
+  // 填空 / 简答/单选
+  return String(answer)
+}
+const questionTypeMap = {
+  1: 'single',
+  2: 'multiple',
+  3: 'judge',
+  4: 'fill',
+  5: 'essay'
+}
+function adaptReviewData(data) {
+  const examInfo = data.exam
+  const list = data.questionDetailVOList
+  const questions = list.map(item => {
+    const q = item.questionSimpleInfoVO
+
+    return {
+      id: q.questionId,
+      type: questionTypeMap[q.type],
+      content: q.content,
+      score: q.score,
+      options: (q.options || []).map(opt => opt.optionText),
+      answer: normalizeAnswer(item.correctAnswer, q.type),
+      analysis: item.analysis,
+      userScore: item.userScore
+    }
+  })
+
+  const answers = list.map(item =>
+      normalizeAnswer(item.userAnswer, item.questionSimpleInfoVO.type)
+  )
+
+  answerCardStore.userScore = list.map(item => item.userScore)
+
+  return {
+    exam: {
+      examId: examInfo.id,
+      examName: examInfo.examName,
+      description: examInfo.description,
+      duration: examInfo.limitMinutes,
+      startTime: examInfo.startTime.split('T')[0],
+      totalScore: questions.reduce((sum, q) => sum + q.score, 0),
+      questions
+    },
+    paper: {
+      answers
+    }
+  }
+}
+// 从路由获取参数
+const examId = Number(route.params.examId)
+const paperId = Number(route.params.paperId)
 // 模拟接口请求加载数据
 onMounted(async () => {
-  // TODO: 替换成真实接口
-  examData.value = await gradeStore.fetchExamData(examId)
-  paperData.value = await gradeStore.fetchPaperData(paperId)
+  try {
+
+    studentName.value =route.params.name
+    const res = await getGradePaper(examId,paperId)
+    console.log("批改测试", res)
+    const { exam, paper } = adaptReviewData(res)
+
+    examData.value = exam
+    paperData.value = paper
+  } catch (e) {
+    ElMessage.error('加载试卷失败')
+    console.error(e)
+  }
   // 将题目和学生答案同步到 gradeStore
   gradeStore.initGrading(paperData.value.paperId,examData.value.examId,examData.value.questions, paperData.value.answers)
 })
 
 // 提交批改
 const submitGrading = async () => {
-  const totalScore = gradeStore.calculateTotalScore()
-  try {
-    await submitGradingApi(paperId, gradeStore.questions)
-    ElMessage.success(`批改提交成功，总分 ${totalScore}`)
-    router.back()
-  } catch (error) {
-    ElMessage.error('批改提交失败')
+  const success = await gradeStore.submitGrade(paperId)
+
+  if (success) {
+    ElMessage.success('评分提交成功')
+  } else {
+    ElMessage.error('评分提交失败')
   }
 }
 //返回

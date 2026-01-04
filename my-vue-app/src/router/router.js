@@ -11,6 +11,8 @@ import LoginRegister from "../pages/loginRegister/loginRegister.vue";
 import createTest from "../pages/createTest.vue";
 import joinExam from "../pages/joinExam.vue";
 import dailyTest from "../pages/dailyTest.vue";
+import QueryExam from "../pages/queryExam.vue";
+import {ElMessage} from "element-plus";
 const routes = [
     { path: '/',
       component: Layout,
@@ -18,63 +20,81 @@ const routes = [
           {
               path:'publishTest',
               component:PublishTest,
-              meta:{title:"发布考试"}
+              meta:{
+                  title:"发布考试",
+                  requiresAuth: true
+              }
           },
           {
               path:'',
               component:PublishTest,
-              meta:{title:"发布考试"}
+              meta:{
+                  title:"发布考试",
+                  requiresAuth: true
+              }
           },
           {
               path:'publishedExams',
               component:PublishedExams,
-              meta: {title: "我发布的考试"}
-          },
-          {
-              path:'answerExam',
-              component:AnswerExam,
-              meta: {title: "参与考试"}
+              meta: {
+                  title: "我发布的考试",
+                  requiresAuth: true
+              }
           },
           {
               path: 'answerExam/:id',
               component:AnswerExam,
               meta: {
                   title: '在线考试',
-                  fullscreen: true
+                  fullscreen: true,
+                  requiresAuth: true
               }
           },
           {
-              path: 'grade/:examId/:paperId',
+              path:'queryExam',
+              component:QueryExam,
+              meta: {
+                  title: "参与考试",
+                  requiresAuth: true
+              }
+          },
+
+          {
+              path: 'grade/:examId/:paperId/:name',
               component: GradingPaper,
               meta: {
                   title: '试卷批改',
-                  fullscreen: true
+                  fullscreen: true,
+                  requiresAuth: true
               }
           },
           {
             path: 'myExams',
             component: MyExams,
-            meta: {title: "我参与的考试"}
+            meta: {
+                title: "我参与的考试",
+                requiresAuth: true
+            }
           },
           {
               path: 'review/:examId',
               component: Review,
               meta: {
                   title: '试卷查看',
-                  fullscreen: true
+                  fullscreen: true,
+                  requiresAuth: true
               }
           },
       ]
 
-      ]
     },
-    // {
-    //     path: '/login',
-    //     component: LoginRegister,
-    //     meta:{
-    //         title:"登录注册"
-    //     }
-    // },
+    {
+        path: '/login',
+        component: () => import('../pages/loginRegister/loginRegister.vue'),
+        meta:{
+            title:"登录注册"
+        }
+    },
     // {
     //     path: '/create',
     //     component: createTest,
@@ -126,16 +146,16 @@ const router = createRouter({
     routes,
 })
 
-// const checkAdminPermission = (to, from, next) => {
-//     const userStore = useUserStore?.() || { hasRole: () => false }
-//
-//     if (userStore.hasRole('admin')) {
-//         next()
-//     } else {
-//         next('/practice')
-//         ElMessage.error('权限不足，无法访问管理后台')
-//     }
-// }
+const checkAdminPermission = (to, from, next) => {
+    const userStore = useUserStore?.() || { hasRole: () => false }
+
+    if (userStore.hasRole('admin')) {
+        next()
+    } else {
+        next('/practice')
+        ElMessage.error('权限不足，无法访问管理后台')
+    }
+}
 
 // 全局路由守卫
 // router.beforeEach((to, from, next) => {
@@ -147,10 +167,9 @@ const router = createRouter({
 //     // 检查是否需要登录
 //     if (to.meta.requiresAuth) {
 //         const token = localStorage.getItem('token')
-//         if (!token) {
-//             next('/practice')
+//         if (!token || token === 'null') {
 //             ElMessage.error('请先登录')
-//             return
+//             return next('/login')
 //         }
 //     }
 //

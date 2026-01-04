@@ -25,6 +25,20 @@
               </template>
             </el-input>
           </el-form-item>
+          <!-- 新增是否批改完搜索条件 -->
+          <el-form-item label="是否批改">
+            <el-select
+                v-model="examStore.examsearchForm.reviewStatus"
+                placeholder="请选择"
+                style="width: 160px"
+                @change="examStore.displayExams"
+                clearable
+            >
+              <el-option label="全部" :value="null" />
+              <el-option label="已批改" :value="true" />
+              <el-option label="未批改" :value="false" />
+            </el-select>
+          </el-form-item>
 
           <el-form-item label="日期范围">
             <el-date-picker
@@ -69,13 +83,13 @@
           <div class="exam-info">
             <h3>
               {{ exam.examName }}
-              <el-tag
-                  type="info"
-                  size="small"
-                  class="exam-code-tag"
-              >
-                考试码：{{ exam.examCode }}
-              </el-tag>
+<!--              <el-tag-->
+<!--                  type="info"-->
+<!--                  size="small"-->
+<!--                  class="exam-code-tag"-->
+<!--              >-->
+<!--                考试码：{{ exam.examCode }}-->
+<!--              </el-tag>-->
             </h3>
 
             <div class="exam-meta">
@@ -96,12 +110,15 @@
 
         <!-- 个人考试信息 -->
         <div class="exam-stats">
-          <span v-if="exam.hasSubmitted">
+          <span v-if="exam.status === 'ended' ">
           用时: <strong>{{ exam.usedTime }} 分钟</strong>
         </span>
           <span v-if="exam.status === 'ended' && exam.score !== null">
           得分: <strong>{{ exam.score }}</strong>
         </span>
+          <span v-if="!exam.reviewStatus">
+            待批改
+          </span>
         </div>
 
         <el-divider />
@@ -112,7 +129,7 @@
                 type="success"
                 plain
                 @click="viewPaper(exam.id)"
-                :disabled="exam.showAnswers===false"
+                :disabled="exam.showAnswers===false||exam.reviewStatus===false"
             >
               <el-icon><Document /></el-icon>
               查看试卷
@@ -186,14 +203,14 @@ const examStore = useExamStore()
 const answerCardStore = useAnswerCardStore()
 
 //加载我参加过的考试
-onMounted(() => {
-  examStore.fetchMyExams()
+onMounted(async () => {
+ await examStore.fetchMyExams()
 })
 // 每次从其它页面“返回”这个页面
 watch(
     () => route.fullPath,
-    () => {
-      examStore.fetchMyExams()
+    async () => {
+      await examStore.fetchMyExams()
     },
     { immediate: true }
 )

@@ -136,7 +136,7 @@
               >
                 <el-button type="success" size="large">
                   <el-icon><UploadFilled /></el-icon>
-                  导入题目实体
+                  导入文件
                 </el-button>
               </el-upload>
             </div>
@@ -208,7 +208,7 @@
                       </div>
                       <p>
                         <b>正确答案：</b>
-                        {{ String.fromCharCode(65 + question.correctAnswer) }}
+                        {{ question.answer || '无' }}
                       </p>
                     </div>
 
@@ -220,9 +220,7 @@
                       <p>
                         <b>正确答案：</b>
                         {{
-                          question.correctAnswer
-                              .map((i) => String.fromCharCode(65 + i))
-                              .join('、')
+                          question.correctAnswer.join('、')
                         }}
                       </p>
                     </div>
@@ -275,7 +273,8 @@
                 <template v-if="examStore.newQuestion.type === 'single'">
                   <el-form-item label="选项设置">
                     <div v-for="(opt, idx) in examStore.newQuestion.options" :key="idx" class="option-item">
-                      <el-radio v-model="examStore.newQuestion.correctAnswer" :label="idx">
+                      <el-radio v-model="examStore.newQuestion.answer"
+                                :label="String.fromCharCode(65 + idx)">
                         {{ String.fromCharCode(65 + idx) }}.
                       </el-radio> <el-input v-model="examStore.newQuestion.options[idx]" placeholder="请输入选项内容" />
                       <el-button
@@ -301,7 +300,7 @@
                 <template v-if="examStore.newQuestion.type === 'multiple'">
                   <el-form-item label="选项设置">
                     <div v-for="(opt, idx) in examStore.newQuestion.options" :key="idx" class="option-item">
-                      <el-checkbox v-model="examStore.newQuestion.correctAnswer" :label="idx" >
+                      <el-checkbox v-model="examStore.newQuestion.correctAnswer" :label="String.fromCharCode(65 + idx)" >
                         {{ String.fromCharCode(65 + idx) }}.
                       </el-checkbox>
                       <el-input v-model="examStore.newQuestion.options[idx]" placeholder="请输入选项内容" />
@@ -437,6 +436,8 @@ import {computed, onMounted, ref} from 'vue'
 import {ElMessage} from "element-plus";
 import {Delete} from "@element-plus/icons-vue";
 import { useExamStore } from '../stores/examStore'
+import {createExam} from "../api/exam.js";
+import * as XLSX from 'xlsx'
 const examStore = useExamStore()
 const active = ref(0)
 
@@ -470,26 +471,143 @@ const prev = () => {
   }
 }
 
-const handleSubmit = () => {
+const handleSubmit = async () => {
   if (!examStore.formData.examCode) {
     ElMessage.error('试卷码未生成')
     return
   }
-  ElMessage.success('考试发布成功！')
-  console.log('提交的数据：', formData.value)
+
+  try {
+    console.log(examStore.formData)
+    await createExam(examStore.formData)
+    ElMessage.success('考试发布成功！')
+    // console.log('提交的数据：', examStore.formData)
+  } catch (err) {
+    ElMessage.error('考试发布失败！')
+  }
 }
+
+
 
 //添加题目
 //导入excel
 const handleBeforeImport = (file) => {
   // 这里你可以调用后端接口上传文件
   ElMessage.success("文件已选择：" + file.name);
-  // 返回 false 阻止 el-upload 自动上传
-  return false;
+  const reader = new FileReader()
+
+  reader.onload = (e) => {
+    const data = new Uint8Array(e.target.result)
+    const workbook = XLSX.read(data, { type: 'array' })
+
+    const sheetName = workbook.SheetNames[0]
+    const sheet = workbook.Sheets[sheetName]
+
+    // 转 JSON（以表头为 key）
+    const rawList = XLSX.utils.sheet_to_json(sheet)
+
+    if (!rawList.length) {
+      ElMessage.error('Excel 中没有题目数据')
+      return
+    }
+
+    const questionList = rawList.map(formatExcelQuestion)
+
+    // 合并进当前试卷题目列表
+    examStore.formData.questions.push(...questionList)
+
+    ElMessage.success(`成功导入 ${questionList.length} 道题目`)
+  }
+
+  reader.readAsArrayBuffer(file)
+  return false
 };
+//题目对象映射
+const headerMap = {
+  '题型': 'type',
+  '试题内容': 'content',
+  '选项A': 'A',
+  '选项B': 'B',
+  '选项C': 'C',
+  '选项D': 'D',
+  '选项E': 'E',
+  '答案': 'answer',
+  '分值': 'score',
+  '解析':'analysis',
+}
 
+const typeMap = {
+  '单选题':'single',
+  '多选题':'multiple',
+  '判断题':'judge',
+  '填空题':'fill',
+  '简答题':'essay',
+}
+const judgeAnswerMap = {
+  '对': 'true',
+  '正确': 'true',
+  '是': 'true',
+  '错': 'false',
+  '错误': 'false',
+  '否': 'false'
+}
+const formatExcelQuestion = (rawRow, index) => {
+  // 1. 表头映射
+  const row = {}
+  Object.keys(rawRow).forEach(key => {
+    if (headerMap[key]) {
+      row[headerMap[key]] = rawRow[key]
+    }
+  })
+
+  // 2. 题型转换
+  const type = typeMap[row.type?.trim()]
+  console.log(type)
+  if (!type) {
+    ElMessage.error(`第 ${index + 2} 行：题型不正确`)
+    throw new Error(`第 ${index + 2} 行：题型不正确`)
+  }
+
+  // 3. 选项数组（顺序非常重要）
+  const options = []
+  if (row.A) options.push(row.A)
+  if (row.B) options.push(row.B)
+  if (row.C) options.push(row.C)
+  if (row.D) options.push(row.D)
+  if (row.E) options.push(row.E)
+
+  if ((type === 'single' ||type === 'multiple')&& options.length < 2) {
+    ElMessage.error(`第 ${index + 2} 行：选项数量不足`)
+    throw new Error(`第 ${index + 2} 行：选项数量不足`)
+  }
+
+  // 4. 答案处理
+  let answer = ''
+  let correctAnswer = []
+
+  if (type === 'multiple') {
+    correctAnswer = row.answer.split(',').map(a => a.trim())
+  }
+
+  if (type === 'judge') {
+    answer = judgeAnswerMap[row.answer?.trim()]
+  }
+  else {
+    answer = row.answer != null ? row.answer.toString().trim() : ''
+  }
+  // 5. 返回你系统真正使用的结构
+  return {
+    id: Date.now() + index,
+    type,
+    content: row.content,
+    score: Number(row.score) || 1,
+    options,
+    answer,
+    correctAnswer,
+    analysis: row.analysis || ''
+  }
+}
 // 弹窗开关
-
 const addDialogVisible = ref(false)
 const dialogTitle = ref("")
 
@@ -511,7 +629,7 @@ const addTempOption = () => {
 
 // 弹窗 - 删除选项
 const removeTempOption = (index) => {
-  examStore.removeQuestion(index)
+  examStore.removeOption(index)
 }
 
 // 点击确定 → 推入题目列表
