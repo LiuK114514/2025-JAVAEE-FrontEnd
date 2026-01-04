@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
+import {postJudge} from "../api/exam.js";
 
 export const useGradeStore = defineStore('grade', () => {
     // 当前批改的试卷数据
@@ -27,7 +28,7 @@ export const useGradeStore = defineStore('grade', () => {
         // 深拷贝题目，避免修改原始数据
         currentGrading.value.questions = questions.map(q => ({
             ...q,
-            userScore: 0 // 默认分数0
+            userScore:  q.userScore ?? 0
         }))
 
         currentGrading.value.userAnswers = userAnswers || []
@@ -36,7 +37,10 @@ export const useGradeStore = defineStore('grade', () => {
         questionScores.value = {}
 
         // 自动评分客观题
-        autoGradeObjectiveQuestions()
+        const hasGraded = questions.some(q => q.userScore > 0)
+        if (!hasGraded) {
+            autoGradeObjectiveQuestions()
+        }
     }
     // 自动评分客观题（单选、多选、判断）
     const autoGradeObjectiveQuestions = () => {
@@ -124,29 +128,23 @@ export const useGradeStore = defineStore('grade', () => {
         })
     }
     // 提交批改结果
-    const submitGrade = async () => {
-        if (!paperId.value || !examId.value) return false
+    const submitGrade = async (paperId) => {
 
         const payload = {
             examId: examId.value,
-            paperId: paperId.value,
+            testerId: paperId,
             totalScore: calculateTotalScore(),
             questions: currentGrading.value.questions.map(q => ({
                 questionId: q.id,
                 userScore: q.userScore
             }))
         }
-
+        console.log(payload)
         try {
-            const response = await fetch('/api/submitGrade', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            })
-            const result = await response.json()
-            return result.success === true
+           await postJudge(examId.value, payload)
+            return true
         } catch (err) {
-            console.error(err)
+            console.error('提交评分失败', err)
             return false
         }
     }
@@ -154,69 +152,69 @@ export const useGradeStore = defineStore('grade', () => {
 
     async function fetchExamData(id) {
         // 返回试卷信息
-        return {
-            examId: id,
-            examName: '前端开发基础测试',
-            totalScore: 40,
-            questions: [
-                // 单选题
-                {
-                    id: 1,
-                    type: 'single',
-                    score: 5,
-                    content: 'Vue 的核心特性是？',
-                    options: [
-                        '单向数据流',
-                        '双向数据绑定',
-                        '直接操作 DOM',
-                        '模板字符串'
-                    ],
-                    answer: 'B'
-                },
-
-                // 多选题
-                {
-                    id: 2,
-                    type: 'multiple',
-                    score: 5,
-                    content: '以下哪些属于 Vue 的核心特性？',
-                    options: [
-                        '组件化',
-                        '响应式系统',
-                        '虚拟 DOM',
-                        '强制使用 TypeScript'
-                    ],
-                    answer: ['A','B','D']
-                },
-
-                // 填空题
-                {
-                    id: 3,
-                    type: 'fill',
-                    score: 10,
-                    content: 'Vue3 中使用 ____ 对象实现响应式系统。',
-                    answer: 'Proxy'
-                },
-
-                // 判断题
-                {
-                    id: 4,
-                    type: 'judge',
-                    score: 5,
-                    content: '在 Vue3 中，ref 只能用于基本数据类型。',
-                    answer: 'true'   // 或 true，按你系统约定
-                },
-
-                // 简答题
-                {
-                    id: 5,
-                    type: 'essay',
-                    score: 15,
-                    content: '请简述 Vue3 响应式系统的实现原理。',
-                    answer: 'Vue3 基于 ES6 的 Proxy 对对象进行代理，拦截数据的读取和修改操作，在依赖收集与触发更新阶段实现高效的响应式更新机制。'
-                }
-            ]
-        }
+        // return {
+        //     examId: id,
+        //     examName: '前端开发基础测试',
+        //     totalScore: 40,
+        //     questions: [
+        //         // 单选题
+        //         {
+        //             id: 1,
+        //             type: 'single',
+        //             score: 5,
+        //             content: 'Vue 的核心特性是？',
+        //             options: [
+        //                 '单向数据流',
+        //                 '双向数据绑定',
+        //                 '直接操作 DOM',
+        //                 '模板字符串'
+        //             ],
+        //             answer: 'B'
+        //         },
+        //
+        //         // 多选题
+        //         {
+        //             id: 2,
+        //             type: 'multiple',
+        //             score: 5,
+        //             content: '以下哪些属于 Vue 的核心特性？',
+        //             options: [
+        //                 '组件化',
+        //                 '响应式系统',
+        //                 '虚拟 DOM',
+        //                 '强制使用 TypeScript'
+        //             ],
+        //             answer: ['A','B','D']
+        //         },
+        //
+        //         // 填空题
+        //         {
+        //             id: 3,
+        //             type: 'fill',
+        //             score: 10,
+        //             content: 'Vue3 中使用 ____ 对象实现响应式系统。',
+        //             answer: 'Proxy'
+        //         },
+        //
+        //         // 判断题
+        //         {
+        //             id: 4,
+        //             type: 'judge',
+        //             score: 5,
+        //             content: '在 Vue3 中，ref 只能用于基本数据类型。',
+        //             answer: 'true'   // 或 true，按你系统约定
+        //         },
+        //
+        //         // 简答题
+        //         {
+        //             id: 5,
+        //             type: 'essay',
+        //             score: 15,
+        //             content: '请简述 Vue3 响应式系统的实现原理。',
+        //             answer: 'Vue3 基于 ES6 的 Proxy 对对象进行代理，拦截数据的读取和修改操作，在依赖收集与触发更新阶段实现高效的响应式更新机制。'
+        //         }
+        //     ]
+        // }
     }
 
     async function fetchPaperData(id) {

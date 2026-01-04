@@ -2,6 +2,10 @@
 import { ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {Lock} from "@element-plus/icons-vue";
+import router from "../../router/router.js";
+import {useUserStore} from '../../stores/userStore.js'
+import {editPassword} from "../../api/login.js";
+const userStore = useUserStore()
 const squareUrl = 'https://cube.elemecdn.com/9/c2/f0ee8a3c7c9638a54940382568c9dpng.png'
 
 // 修改密码对话框
@@ -15,8 +19,8 @@ const passwordForm = ref({
 const infoDialogVisible = ref(false)
 const infoFormRef = ref(null)
 const infoForm = ref({
-  realName: '',
-  email: ''
+  realName: userStore.userInfo?.name,
+  email: userStore.userInfo?.email
 })
 
 //修改个人信息
@@ -100,15 +104,29 @@ const rule = {
 function submitPasswordChange() {
   passwordFormRef.value.validate((valid) => {
     if (valid) {
+      // console.log(userStore.userInfo.id,passwordForm.value.newPassword,passwordForm.value.oldPassword)
       // 这里调用修改密码的 API
-      // api.changePassword(passwordForm.value).then(() => {
-      //   ElMessage.success('密码修改成功，请重新登录')
-      //   passwordDialogVisible.value = false
-      //   handleLogout()
-      // })
-      passwordDialogVisible.value = false
-      console.log("验证成功")
-      resetPasswordForm()
+      editPassword(userStore.userInfo.id, passwordForm.value.newPassword, passwordForm.value.oldPassword).
+      then(() => {
+        // 弹窗提示 + 跳转
+        ElMessage.success({
+          message: '密码修改成功，请重新登录',
+          duration: 1500,
+          onClose: () => {
+            // 清理数据
+            localStorage.removeItem('token')
+            userStore.resetUserInfo()
+            resetPasswordForm()
+            // 跳转登录页
+            router.push('/login')
+          }
+        })
+
+        passwordDialogVisible.value = false
+      }).catch((e) => {
+        ElMessage.error(e.response?.data?.message || '修改密码失败')
+          })
+
     }
     else {
       ElMessage.error('请完善表单信息')
@@ -139,9 +157,9 @@ function handleLogout() {
       }
   ).then(() => {
     // 清除本地存储的 token 等信息
-    // localStorage.removeItem('token')
-    // sessionStorage.clear()
-
+    localStorage.removeItem('token')
+    //清除用户信息
+    userStore.resetUserInfo()
     ElMessage.success('退出登录成功')
 
     // 跳转到登录页
@@ -217,7 +235,7 @@ const handleCommand = (c) => {
         <el-form-item label="真实姓名">
           <el-input
               v-model="infoForm.realName"
-              placeholder="真实姓名"
+
               disabled
           />
         </el-form-item>
@@ -225,7 +243,7 @@ const handleCommand = (c) => {
           <el-input
               v-model="infoForm.email"
               type="email"
-              placeholder="请输入邮箱"
+             disabled
           />
         </el-form-item>
       </el-form>

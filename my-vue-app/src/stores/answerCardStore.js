@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
+import {getReviewPaper, postAnswer, postAutoSave} from "../api/exam.js";
 
 export const useAnswerCardStore = defineStore('answerCard', () => {
     const currentExam = ref(null)
@@ -48,8 +49,10 @@ export const useAnswerCardStore = defineStore('answerCard', () => {
     const initExam = (examData) => {
         currentExam.value = examData
         startTime.value = Date.now()
-        remainingTime.value = examData.duration * 60
-        initAnswers()
+        remainingTime.value = currentExam.value.duration * 60
+
+        const initialAnswers = examData.questions.map(q => q.answer)
+        initAnswers(initialAnswers)
 
     }
 
@@ -118,29 +121,46 @@ export const useAnswerCardStore = defineStore('answerCard', () => {
         // 2. 构造提交数据
         const payload = {
             examId: currentExam.value.id,
-            answers,
+            answers:answers,
             startTime: startTime.value,
             submitTime: Date.now(),
-            duration: currentExam.value.duration * 60 - remainingTime.value
+            duration: currentExam.value.duration * 60 - remainingTime.value,
+            action:"submit"
         }
-        return true
-        // try {
-        //     const response = await fetch('/api/submitExam', {
-        //         method: 'POST',
-        //         headers: { 'Content-Type': 'application/json' },
-        //         body: JSON.stringify(payload)
-        //     })
-        //
-        //     const result = await response.json()
-        //     return result.success === true
-        // } catch (error) {
-        //     console.error('提交试卷失败：', error)
-        //     return false
-        // } finally {
-        //     isSubmitting.value = false
-        // }
-    }
+        try{
+            await postAnswer(payload)
+            return true
+        }catch(e){
+            console.error('提交答卷失败', e)
+            return false
+        }
 
+    }
+    // 自动保存答卷
+    const autoSaveExam = async () => {
+        if (!currentExam.value) return false
+        if (isSubmitting.value) return false
+
+        // 组装答案（questionId + answer）
+        const answers = currentExam.value.questions.map((q, index) => ({
+            questionId: q.id,
+            answer: userAnswers.value[index] ?? null
+        }))
+        // 构造自动保存数据
+        const payload = {
+            examId: currentExam.value.id,
+            answers:answers
+        }
+        try {
+            console.log(payload)
+            await postAutoSave(payload)
+            console.log('答卷自动保存成功')
+            return true
+        } catch (e) {
+            console.error('答卷自动保存失败', e)
+            return false
+        }
+    }
     // 清空当前试卷状态
     const clearExam = () => {
         currentExam.value = null
@@ -177,111 +197,85 @@ export const useAnswerCardStore = defineStore('answerCard', () => {
         return stats
     }
     //获取试卷信息
-    async function fetchExamData(examId) {
-        // try {
-        //     const res = await axios.get(`/api/exams/${examId}`)
-        //     if (res && res.data) {
-        //         exams.value[examId] = res.data
-        //         return res.data
-        //     }
-        //     return null
-        // } catch (error) {
-        //     console.error('fetchExamData error:', error)
-        //     return null
-        // }
+    // async function fetchExamData(examId) {
+    //     return {
+    //         examId: examId,
+    //         examName: '前端开发基础测试',
+    //         duration:90,
+    //         totalScore: 40,
+    //         questions: [
+    //             // 单选题
+    //             {
+    //                 id: 1,
+    //                 type: 'single',
+    //                 score: 5,
+    //                 content: 'Vue 的核心特性是？',
+    //                 options: [
+    //                     '单向数据流',
+    //                     '双向数据绑定',
+    //                     '直接操作 DOM',
+    //                     '模板字符串'
+    //                 ],
+    //                 answer: 'B',
+    //                 analysis:'11111111111111'
+    //             },
+    //
+    //             // 多选题
+    //             {
+    //                 id: 2,
+    //                 type: 'multiple',
+    //                 score: 5,
+    //                 content: '以下哪些属于 Vue 的核心特性？',
+    //                 options: [
+    //                     '组件化',
+    //                     '响应式系统',
+    //                     '虚拟 DOM',
+    //                     '强制使用 TypeScript'
+    //                 ],
+    //                 answer: ['A','B','D'],
+    //                 analysis:'11111111111111'
+    //             },
+    //
+    //             // 填空题
+    //             {
+    //                 id: 3,
+    //                 type: 'fill',
+    //                 score: 10,
+    //                 content: 'Vue3 中使用 ____ 对象实现响应式系统。',
+    //                 answer: 'Proxy',
+    //                 analysis:'11111111111111'
+    //             },
+    //
+    //             // 判断题
+    //             {
+    //                 id: 4,
+    //                 type: 'judge',
+    //                 score: 5,
+    //                 content: '在 Vue3 中，ref 只能用于基本数据类型。',
+    //                 answer: 'true' ,  // 或 true，按你系统约定,
+    //                 analysis:'11111111111111'
+    //             },
+    //
+    //             // 简答题
+    //             {
+    //                 id: 5,
+    //                 type: 'essay',
+    //                 score: 15,
+    //                 content: '请简述 Vue3 响应式系统的实现原理。',
+    //                 answer: 'Vue3 基于 ES6 的 Proxy 对对象进行代理，拦截数据的读取和修改操作，在依赖收集与触发更新阶段实现高效的响应式更新机制。',
+    //                 analysis:'11111111111111'
+    //             }
+    //         ]
+    //     }
+    // }
 
-        return {
-            examId: examId,
-            examName: '前端开发基础测试',
-            totalScore: 40,
-            questions: [
-                // 单选题
-                {
-                    id: 1,
-                    type: 'single',
-                    score: 5,
-                    content: 'Vue 的核心特性是？',
-                    options: [
-                        '单向数据流',
-                        '双向数据绑定',
-                        '直接操作 DOM',
-                        '模板字符串'
-                    ],
-                    answer: 'B',
-                    analysis:'11111111111111'
-                },
-
-                // 多选题
-                {
-                    id: 2,
-                    type: 'multiple',
-                    score: 5,
-                    content: '以下哪些属于 Vue 的核心特性？',
-                    options: [
-                        '组件化',
-                        '响应式系统',
-                        '虚拟 DOM',
-                        '强制使用 TypeScript'
-                    ],
-                    answer: ['A','B','D'],
-                    analysis:'11111111111111'
-                },
-
-                // 填空题
-                {
-                    id: 3,
-                    type: 'fill',
-                    score: 10,
-                    content: 'Vue3 中使用 ____ 对象实现响应式系统。',
-                    answer: 'Proxy',
-                    analysis:'11111111111111'
-                },
-
-                // 判断题
-                {
-                    id: 4,
-                    type: 'judge',
-                    score: 5,
-                    content: '在 Vue3 中，ref 只能用于基本数据类型。',
-                    answer: 'true' ,  // 或 true，按你系统约定,
-                    analysis:'11111111111111'
-                },
-
-                // 简答题
-                {
-                    id: 5,
-                    type: 'essay',
-                    score: 15,
-                    content: '请简述 Vue3 响应式系统的实现原理。',
-                    answer: 'Vue3 基于 ES6 的 Proxy 对对象进行代理，拦截数据的读取和修改操作，在依赖收集与触发更新阶段实现高效的响应式更新机制。',
-                    analysis:'11111111111111'
-                }
-            ]
-        }
-    }
-
-    async function fetchAnswerRecord(userId) {
-        // try {
-        //     const res = await axios.get(`/api/answerRecords`, {
-        //         params: { userId }
-        //     })
-        //     if (res && res.data) {
-        //         answerRecords.value[userId] = res.data
-        //         return res.data
-        //     }
-        //     return null
-        // } catch (error) {
-        //     console.error('fetchAnswerRecord error:', error)
-        //     return null
-        // }
-        userScore.value=[5, 3, 10, 5, 3]
-        return {
-            paperId: userId,
-            answers: ['C',['A','C'], 'proxy', 'false','555']
-        }
-
-
-    }
+    // async function fetchAnswerRecord(userId) {
+    //     userScore.value=[5, 3, 10, 5, 3]
+    //     return {
+    //         paperId: userId,
+    //         answers: ['C',['A','C'], 'proxy', 'false','555']
+    //     }
+    // }
 
     return {
         currentExam,
@@ -307,10 +301,11 @@ export const useAnswerCardStore = defineStore('answerCard', () => {
         // deleteDraft,
         updateRemainingTime,
         submitExam,
+        autoSaveExam,
         clearExam,
         // loadDraftsFromStorage,
         getAnswerStats,
-        fetchExamData,
-        fetchAnswerRecord,
+        // fetchExamData,
+        // fetchAnswerRecord,
     }
 })

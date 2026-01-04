@@ -188,26 +188,52 @@
 
           <!-- 答案解析 (查看模式) -->
           <div v-if="mode === 'review'" class="question-analysis">
+            <!-- 正确答案 -->
             <div class="correct-answer">
-              <strong>正确答案: </strong>
+              <strong>正确答案：</strong>
               <span v-if="question.type === 'single' || question.type === 'judge'">
-              {{ formatAnswer(question) }}
-            </span>
+                {{ formatAnswer(question) }}
+              </span>
               <span v-else-if="question.type === 'multiple'">
-              {{ formatMultipleAnswer(question) }}
-            </span>
-              <span v-else>{{ question.answer }}</span>
+                {{ formatMultipleAnswer(question) }}
+              </span>
+              <span v-else>
+                {{ question.answer }}
+              </span>
             </div>
+
+            <!-- 原有人工解析 -->
             <div v-if="question.analysis" class="analysis-content">
-              <strong>答案解析: </strong>
+              <strong>答案解析：</strong>
               <span v-html="question.analysis"></span>
             </div>
+
+            <!-- AI 解析操作区 -->
+            <div class="ai-analysis">
+              <el-button
+                  size="small"
+                  type="primary"
+                  plain
+                  :loading="aiLoading"
+                  @click="askAI(question,index)"
+              >
+                问 AI
+              </el-button>
+            </div>
+
+            <!-- AI 解析结果 -->
+            <el-collapse v-if="aiAnswer">
+              <el-collapse-item title="AI 智能解析（仅供参考）">
+                <div class="ai-content" v-html="aiAnswer"></div>
+              </el-collapse-item>
+            </el-collapse>
+
           </div>
 
           <!-- 批改模式下的评分 -->
           <div v-if="mode === 'grade' && (question.type === 'fill' || question.type === 'essay')"
                class="grade-section"> <div class="student-answer">
-            <strong>学生答案: </strong>
+            <strong>考生答案: </strong>
             <div v-html="answerStore.userAnswers[index] || '未作答'"></div>
           </div>
             <div class="reference-answer">
@@ -240,7 +266,8 @@
         </div>
         <div class="footer-right">
 <!--          <el-button v-if="mode === 'answer'" @click="handleSaveDraft">保存草稿</el-button>-->
-          <el-button v-if="mode === 'answer'" type="primary" @click="handleSubmit()" :loading="answerStore.isSubmitting">提交试卷</el-button>
+          <el-button v-if="mode === 'answer'" type="primary" @click="handleSubmit()" :loading="answerStore.isSubmitting"
+                     :disabled="!canSubmit">{{ canSubmit ? '提交试卷' : '考试开始 10 分钟后才能交卷' }}</el-button>
           <el-button v-if="mode === 'grade'" type="primary" @click="handleSubmitGrade">
             提交批改 ({{ gradeStore.calculateTotalScore() }}分)
           </el-button>
@@ -258,6 +285,8 @@ import { useGradeStore } from '../stores/gradeStore'
 import { useExamStore } from '../stores/examStore'
 import {Check, Close} from "@element-plus/icons-vue";
 import router from "../router/router.js";
+import {getAIAnswer} from "../api/exam.js";
+import { marked } from 'marked'
 const answerStore = useAnswerCardStore()
 const gradeStore = useGradeStore()
 const examStore = useExamStore()
@@ -312,7 +341,7 @@ const getTypeTag = (type) => typeTagMap[type] || ""
 onMounted(async () => {
   if (props.mode === 'answer') {
     // 答题模式 - 初始化试卷
-    answerStore.initExam(props.examData)
+
     startTimer()
     window.addEventListener('beforeunload', handleBeforeUnload)
   }
@@ -322,6 +351,7 @@ onMounted(async () => {
   //   answerStore.initAnswers(props.initialAnswers)
   //   console.log(props.examData)
   // }
+
 })
 //确保试卷和答案渲染成功
 const isReadyForInit = computed(() => {
@@ -348,6 +378,7 @@ onUnmounted(() => {
 })
 
 // ==================== 倒计时相关 ====================
+
 const startTimer = () => {
   timer = setInterval(() => {
     if (answerStore.remainingTime > 0) {
@@ -358,7 +389,14 @@ const startTimer = () => {
     }
   }, 1000)
 }
-
+//开考10分钟内不允许交卷
+const canSubmit = computed(() => {
+  const exam = answerStore.currentExam
+  if (!exam || !exam.duration) return false
+  const usedTime =
+      exam.duration* 60 - answerStore.remainingTime
+  return usedTime >= 6   // 10 分钟
+})
 const clearTimer = () => {
   if (timer) {
     clearInterval(timer)
@@ -612,35 +650,11 @@ const handleTimeUp = async () => {
 
 const doSubmit =async () => {
   clearTimer()
-  const success=await answerStore.submitExam()
-  emit('submit',success)
-  if(success){
-  // 清空状态
-  setTimeout(() => {
-    answerStore.clearExam()
-  }, 500)
-  }
+  emit('submit')
 }
 
 const handleSubmitGrade = async () => {
-  if (!gradeStore.isGradingComplete()) {
-    ElMessage.warning('还有未批改的主观题，请先打分')
-    return
-  }
-  const success = await gradeStore.submitGrade()
-  if (success) {
-    ElMessage.success('批改提交成功！')
-  } else {
-    ElMessage.error('批改提交失败，请重试')
-  }
-  // 关键点：重新拉成绩列表
-  await  examStore.fetchPublishedExams()
-  if (document.fullscreenElement) {
-    await document.exitFullscreen();
-  }
-  // 可选：返回列表页
-  router.back()
-
+emit("submitGrade")
 }
 
 const handleClose = () => {
@@ -653,9 +667,53 @@ const handleBeforeUnload = (e) => {
     e.returnValue = '确定要离开吗?未保存的答案将丢失'
   }
 }
+
+//问AI
+const aiLoading = ref(false)
+const aiAnswer = ref('')
+const askAI = async (question,index) => {
+  if (aiAnswer.value) return   // 已获取过，不重复请求
+
+  aiLoading.value = true
+
+  try {
+    const prompt = {
+      type:question.type,
+      content:question.content,
+      options:question.options||null,
+      answer:question.answer,
+      userAnswer:answerStore.userAnswers[index] || '未作答'
+    }
+
+    const res = await getAIAnswer(prompt)
+    console.log(res)
+    // 安全获取 AI 返回内容
+    const content = res?.choices?.[0]?.message?.content || 'AI 未返回内容'
+    // 使用 marked 转成 HTML
+    aiAnswer.value = marked(content)
+  } catch (e) {
+    console.log(e)
+    ElMessage.error('获取 AI 解析失败')
+  } finally {
+    aiLoading.value = false
+  }
+}
 </script>
 
 <style scoped>
+.question-analysis {
+  margin-top: 12px;
+}
+
+.ai-analysis {
+  margin-top: 10px;
+}
+
+.ai-content {
+  line-height: 1.8;
+  color: #333;
+  font-size: 14px;
+}
 .exam-timer-panel {
   padding: 16px;
   margin-bottom: 16px;
@@ -848,12 +906,12 @@ const handleBeforeUnload = (e) => {
 }
 /* 答题模式（有时间、进度） */
 .answer-card-sidebar.answer-mode {
-  height: 500px;
+  height: 800px;
 }
 
 /* 批改 / 查看模式（内容更少） */
 .answer-card-sidebar.grade-mode {
-  height: 260px;
+  height: 400px;
 }
 /* 答题卡头部 */
 .answer-card-header {

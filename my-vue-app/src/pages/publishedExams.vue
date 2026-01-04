@@ -110,7 +110,7 @@
 
         <!-- 统计信息 -->
         <div class="exam-stats">
-          <span>参与人数: <strong>{{ exam.participants }}</strong></span>
+<!--          <span>参与人数: <strong>{{ exam.participants }}</strong></span>-->
           <span>已提交: <strong>{{ exam.submitted }}</strong></span>
           <span v-if="exam.status === 'ended'">
             已批阅: <strong>{{ exam.graded }}</strong>
@@ -333,7 +333,7 @@
         <el-pagination
             background
             layout="prev, pager, next, jumper"
-            :total="examStore.studentSubmissions.length"
+            :total="examStore.filteredSubmissions.length"
             :page-size="examStore.gradingPagination.pageSize"
             :current-page.sync="examStore.gradingPagination.currentPage"
             @current-change="handleGradeChange"
@@ -521,7 +521,7 @@
         <el-pagination
             background
             layout="prev, pager, next, jumper"
-            :total="examStore.abnormalList.length"
+            :total="examStore.filterAbnormalLogs.length"
             :page-size="examStore.logPagination.pageSize"
             :current-page.sync="examStore.logPagination.currentPage"
             @current-change="handleAbnormalPageChange"
@@ -542,6 +542,7 @@ import router from "../router/router.js";
 import {ElMessage} from "element-plus";
 import {onBeforeRouteUpdate} from "vue-router";
 import {START_LOCATION_NORMALIZED as route} from "vue-router/dist/devtools-BLCumUwL.mjs";
+import {getGradePaper} from "../api/exam.js";
 
 const examStore = useExamStore()
 const gradeStore = useGradeStore()
@@ -630,7 +631,7 @@ const startGrading = async (examId,row) => {
       await document.documentElement.requestFullscreen()
     }
     await  router.push({
-      path: `/grade/${examId}/${row.id}`
+      path: `/grade/${examId}/${row.id}/${row.name}`
     })
 
   } catch (e) {

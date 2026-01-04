@@ -2,10 +2,10 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import router from '../router/router.js'
 
-// 创建axios实例
+// 创建axios实例  import.meta.env.VITE_API_BASE_URL ||
 const service = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
-    timeout: 15000, // 请求超时时间
+    baseURL: '/api',
+    timeout: 300000, // 请求超时时间
     headers: {
         'Content-Type': 'application/json;charset=utf-8'
     }

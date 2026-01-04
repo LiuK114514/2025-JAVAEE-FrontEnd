@@ -2,6 +2,8 @@
 import {ref} from "vue";
 import { useRouter,useRoute } from 'vue-router';
 import { menuWidthStore } from "../../stores/menu.js";
+import {useUserStore} from '../../stores/userStore.js'
+const userStore = useUserStore()
 const router = useRouter();
 const route = useRoute();
 const menuStore = menuWidthStore()
@@ -25,7 +27,7 @@ const defaultActive=ref(
     <div class="sidebar-user">
       <el-icon><Avatar /></el-icon>
       <div class="user-info" v-if="!menuStore.isCollapse">
-        <p class="user-name">你好，刘康</p>
+        <p class="user-name">你好，{{userStore.userInfo?.name}}</p>
       </div>
     </div>
 

@@ -42,13 +42,21 @@
     <div class="form-section">
       <el-card class="auth-card">
         <div class="card-header">
-          <h2>欢迎回来</h2>
-          <p>请登录或注册您的账户</p>
+          <h2>{{ isAdminLogin ? '管理员登录' : '欢迎回来' }}</h2>
+          <p>
+            {{ isAdminLogin ? '请输入管理员账户信息' : '请登录或注册您的账户' }}
+          </p>
         </div>
 
         <el-tabs v-model="activeTab" tab-position="top"  class="auth-tabs">
           <el-tab-pane label="登录" name="login">
-            <el-form ref="formRef" :rules="rules1" :model="loginForm" class="auth-form">
+            <el-form
+                ref="formRef"
+                :rules="rules1"
+                :model="loginForm"
+                class="auth-form"
+                :class="{ 'admin-mode': isAdminLogin }"
+            >
               <el-form-item prop="email">
                 <el-input
                     v-model="loginForm.email"
@@ -69,7 +77,12 @@
                 />
               </el-form-item>
               <div class="form-options">
-                <el-checkbox>记住我</el-checkbox>
+                <span class="admin-label">管理员登录</span>
+                <el-switch
+                    v-model="isAdminLogin"
+                    active-text="开启"
+                    inactive-text="关闭"
+                />
               </div>
               <el-form-item>
                 <el-button type="primary" size="large" @click="onSubmit"  class="submit-btn">
@@ -79,7 +92,7 @@
             </el-form>
           </el-tab-pane>
 
-          <el-tab-pane label="注册" name="register">
+          <el-tab-pane v-if="!isAdminLogin" label="注册" name="register">
             <el-form ref="registerFormRef" :rules="rules2" :model="registerForm" class="auth-form">
               <el-form-item prop="email">
                 <el-input
@@ -159,11 +172,13 @@
 <script setup>
 import { ref } from 'vue'
 import { ElMessage ,ElNotification} from 'element-plus'
-import {login} from "../../api/login.js";
+import {getCode, login, register} from "../../api/login.js";
 import {useUserStore} from '../../stores/userStore.js'
+import router from "../../router/router.js";
 const userStore = useUserStore()
 const activeTab = ref('login')
 const loginForm = ref({ email: '', password: '' })
+const isAdminLogin = ref(false)
 const registerForm = ref({ email: '',realname:'', password: '', confirm: '',code: '' })
 const formRef = ref(null)
 const registerFormRef=ref(null)
@@ -258,15 +273,13 @@ const rules2 = {
 // 发送验证码方法
 const sendVerifyCode = async () => {
   // 先验证邮箱格式
-  if (!registerForm.email) {
+  if (!registerForm.value.email) {
     ElMessage.warning('请先输入邮箱')
     return
   }
 
   try {
-    // 调用后端接口发送验证码
-    // await api.sendVerifyCode({ email: registerForm.email })
-
+    await getCode(registerForm.value.email)
     // 开始倒计时
     countdown.value = 60
     const timer = setInterval(() => {
@@ -276,48 +289,65 @@ const sendVerifyCode = async () => {
       }
     }, 1000)
   } catch (error) {
+    console.log(error)
     ElMessage.error('验证码发送失败')
   }
 }
 //登录提交
 const onSubmit = () => {
   formRef.value.validate((valid) => {
-    if (valid) {
-      login(loginForm.value.email, loginForm.value.password)
-          .then(res=>{
-            console.log(res)
-            ElNotification({
-              type: 'success',
-              message:"登陆成功",
-              duration: 1500
-            })
-            userStore.initUser()
-            //存cookie
-            //跳转
-          })
-          .catch(err=>{
-            console.log(err)
-            ElNotification({
-              type: "error",
-              message: err.response.data.message ||"请求失败",
-              duration: 3000,
-            })
-          })
-      console.log('表单验证通过', loginForm.value)
-    } else {
-      // 验证失败
+    if (!valid) {
       console.log('表单验证失败')
+      ElNotification({
+        type: 'error',
+        message: '请完善表单信息',
+        duration: 1500
+      })
       return false
     }
+    const role=isAdminLogin.value ? 'ADMIN' : 'USER'
+    // 调用登录接口
+    login(loginForm.value.email, loginForm.value.password,role)
+        .then(res => {
+          console.log(res)
+
+          // 弹窗提示
+          ElNotification({
+            type: 'success',
+            message: '登录成功',
+            duration: 1500
+          })
+
+          // 存 token + 用户信息 到 store & localStorage
+          userStore.setUser(res.id, res.name, res.userName, res.token)
+
+          // 跳转首页
+          router.push('/')
+        })
+        .catch(err => {
+          console.log(err)
+          ElNotification({
+            type: 'error',
+            message: err.response?.data?.message || '登录失败',
+            duration: 1500
+          })
+        })
   })
 }
 // 注册提交
 const onRegisterSubmit = () => {
   registerFormRef.value.validate((valid) => {
     if (valid) {
-      console.log('注册表单验证通过', registerForm.value)
+      // console.log(registerFormRef.value.email, registerFormRef.value.realname,registerForm.value.password,registerFormRef.value.code)
+      // console.log('注册表单验证通过', registerForm.value)
       // 处理注册逻辑
-      ElMessage.success('注册成功')
+      register(registerForm.value.email, registerForm.value.realname,registerForm.value.password,registerForm.value.code)
+          .then(res=>{
+            ElMessage.success('注册成功')
+          })
+          .catch(err=>{
+            console.log(err)
+          })
     } else {
       console.log('注册表单验证失败')
       ElMessage.error('请完善表单信息')
