@@ -321,10 +321,10 @@ const onSubmit = () => {
 
           // 存 token + 用户信息 到 store & localStorage
           userStore.setUser(res.id, res.name, res.userName, res.token)
-          userStore.isAdmin=true
+          userStore.isAdmin=isAdminLogin.value
           // 跳转首页
-          if(role==='USER')router.push('/')
-          else router.push('/dailyTest')
+          if(!userStore.isAdmin)router.push('/')
+          else router.push('/admin')
         })
         .catch(err => {
           console.log(err)
