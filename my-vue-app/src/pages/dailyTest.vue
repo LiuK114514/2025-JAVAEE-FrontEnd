@@ -77,16 +77,16 @@
                     </template>
                   </el-button>
 
-<!--                  <el-button-->
-<!--                      @click="getRandomQuestion"-->
-<!--                      type="info"-->
-<!--                      plain-->
-<!--                      size="large"-->
-<!--                      :disabled="store.loading"-->
-<!--                  >-->
-<!--                    <i class="fas fa-random"></i>-->
-<!--                    随机题目-->
-<!--                  </el-button>-->
+                  <el-button
+                      @click="getRandomQuestion"
+                      type="info"
+                      plain
+                      size="large"
+                      :disabled="store.loading"
+                  >
+                    <i class="fas fa-random"></i>
+                    随机题目
+                  </el-button>
                 </div>
 
                 <!-- 结果展示 -->
@@ -114,7 +114,7 @@
         <el-aside width="320px" class="stats-section">
           <PracticeStats
               :answered-count="answeredCount"
-              :total-questions="100"
+              :total-questions="10"
               :progress-percentage="progressPercentage"/>
           <!--              :correct-rate="store.correctRate"-->
           <!--              :streak-days="store.streakDays"-->
@@ -131,36 +131,36 @@
                     @click="refreshHistory"
                     :loading="refreshingHistory"
                 >
-                  <i class="fas fa-sync-alt" :class="{ 'fa-spin': refreshingHistory }"></i>
+                  <i class="fas fa-sync-alt" :class="{ 'fa-spin': refreshingHistory }">暂无记录</i>
                 </el-button>
               </div>
             </template>
 
-            <el-scrollbar max-height="200px">
-              <div
-                  v-for="(record, index) in store.recentHistory"
-                  :key="index"
-                  class="history-item"
-                  :class="record.correct ? 'correct' : 'incorrect'"
-              >
-                <div class="history-content">
-                  <span class="history-date">{{ store.formatDate(record.date) }}</span>
-                  <span class="history-category">{{ record.category }}</span>
-                  <el-tag
-                      :type="getDifficultyType(record.difficulty)"
-                      size="small"
-                  >
-                    {{ getDifficultyText(record.difficulty) }}
-                  </el-tag>
-                </div>
-              </div>
-
-<!--              <div v-if="store.recentHistory.length === 0" class="empty-history">-->
-<!--                <i class="fas fa-clipboard-list"></i>-->
-<!--                <p>暂无答题记录</p>-->
-<!--&lt;!&ndash;                <el-button type="text" @click="loadPracticeHistory">加载更多</el-button>&ndash;&gt;-->
+<!--            <el-scrollbar max-height="200px">-->
+<!--              <div-->
+<!--                  v-for="(record, index) in store.recentHistory"-->
+<!--                  :key="index"-->
+<!--                  class="history-item"-->
+<!--                  :class="record.correct ? 'correct' : 'incorrect'"-->
+<!--              >-->
+<!--                <div class="history-content">-->
+<!--                  <span class="history-date">{{ store.formatDate(record.date) }}</span>-->
+<!--                  <span class="history-category">{{ record.category }}</span>-->
+<!--                  <el-tag-->
+<!--                      :type="getDifficultyType(record.difficulty)"-->
+<!--                      size="small"-->
+<!--                  >-->
+<!--                    {{ getDifficultyText(record.difficulty) }}-->
+<!--                  </el-tag>-->
+<!--                </div>-->
 <!--              </div>-->
-            </el-scrollbar>
+
+<!--&lt;!&ndash;              <div v-if="store.recentHistory.length === 0" class="empty-history">&ndash;&gt;-->
+<!--&lt;!&ndash;                <i class="fas fa-clipboard-list"></i>&ndash;&gt;-->
+<!--&lt;!&ndash;                <p>暂无答题记录</p>&ndash;&gt;-->
+<!--&lt;!&ndash;&lt;!&ndash;                <el-button type="text" @click="loadPracticeHistory">加载更多</el-button>&ndash;&gt;&ndash;&gt;-->
+<!--&lt;!&ndash;              </div>&ndash;&gt;-->
+<!--            </el-scrollbar>-->
           </el-card>
 
           <!-- 学习小贴士 -->
@@ -213,6 +213,8 @@ import PracticeStats from '../components/PracticeStats.vue'
 const store = usePracticeStore()
 const refreshingHistory = ref(false)
 const currentDate = ref('')
+const answeredCount = ref(0)
+const totalQuestions = 10
 
 // 计算属性
 const difficultyText = computed(() => {
@@ -223,6 +225,10 @@ const difficultyText = computed(() => {
     'hard': '困难'
   }
   return difficultyMap[store.currentQuestion.difficulty] || store.currentQuestion.difficulty
+})
+
+const progressPercentage = computed(() => {
+  return answeredCount.value/totalQuestions
 })
 
 // const answeredCount = computed(() => store.history.length)
@@ -251,6 +257,7 @@ onMounted(async () => {
   try {
     // 初始化练习数据
     await store.init()
+    answeredCount.value = 0
   } catch (error) {
     console.error('初始化失败:', error)
     ElMessage.error('加载练习数据失败')
@@ -303,6 +310,7 @@ const handleSubmitAnswer = async () => {
 
     if (result.success) {
       ElMessage.success('答案提交成功！')
+      answeredCount.value++
     } else {
       ElMessage.error(result.error || '提交失败')
     }

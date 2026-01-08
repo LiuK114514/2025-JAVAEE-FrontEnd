@@ -395,7 +395,7 @@ const canSubmit = computed(() => {
   if (!exam || !exam.duration) return false
   const usedTime =
       exam.duration* 60 - answerStore.remainingTime
-  return usedTime >= 6   // 10 分钟
+  return usedTime >= 15   // 10 分钟
 })
 const clearTimer = () => {
   if (timer) {

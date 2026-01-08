@@ -130,7 +130,7 @@ function normalizeAnswer(answer, type) {
             .split('')
   }
   // 判断题
-  if (type === 4 || type === 'judge') {
+  if (type === 'judge') {
     return String(answer).toLowerCase() === 'true'
   }
   // 填空 / 简答
@@ -168,7 +168,7 @@ onMounted(async () => {
   document.addEventListener('contextmenu', handleRightClick)
   console.log('监听器已绑定')
   if (!autoSaveTimer) {
-    autoSaveTimer = setInterval(answerCardStore.autoSaveExam, 5 * 1000)
+    autoSaveTimer = setInterval(answerCardStore.autoSaveExam, 10 * 1000)
   }
   //获取试卷
   const examId=route.params.id

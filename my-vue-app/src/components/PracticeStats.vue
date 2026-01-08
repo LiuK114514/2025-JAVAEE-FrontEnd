@@ -13,21 +13,12 @@
       </div>
 
       <el-progress
-          :percentage="progressPercentage"
+          :percentage="progressPercentage*100"
           :show-text="false"
           :stroke-width="10"
           color="#4b6cb7"
       />
 
-<!--      <div class="stats-item">-->
-<!--        <span>正确率</span>-->
-<!--        <span>{{ correctRate }}%</span>-->
-<!--      </div>-->
-
-<!--      <div class="streak-counter">-->
-<!--        <i class="fas fa-fire" style="color: #ff9800;"></i>-->
-<!--        <span>连续练习 {{ streakDays }} 天</span>-->
-<!--      </div>-->
     </div>
   </el-card>
 </template>

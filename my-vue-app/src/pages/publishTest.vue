@@ -81,7 +81,7 @@
             <el-form-item label="其他设置">
               <div style="display: flex; flex-direction: column; gap: 12px">
                 <el-checkbox v-model="examStore.formData.showAnswers">
-                  交卷后显示成绩
+                  是否可以查看试卷
                 </el-checkbox>
               </div>
             </el-form-item>

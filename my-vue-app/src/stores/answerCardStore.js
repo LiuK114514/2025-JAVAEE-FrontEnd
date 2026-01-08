@@ -156,7 +156,7 @@ export const useAnswerCardStore = defineStore('answerCard', () => {
     // 自动保存答卷
     const autoSaveExam = async () => {
         if (!currentExam.value) return false
-        if (isSubmitting.value) return false
+
 
         // 组装答案（questionId + answer）
         const answers = currentExam.value.questions.map((q, index) => ({

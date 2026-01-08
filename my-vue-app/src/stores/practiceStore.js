@@ -47,7 +47,9 @@ export const usePracticeStore = defineStore('practice', () => {
         try {
             loading.value = true
             const result = await questionApi.getDailyQuestion()
+            console.log(result)
             currentQuestion.value = result
+            console.log(currentQuestion.value)
             resetQuestionState()
             return { success: true, data: result }
         } catch (error) {
