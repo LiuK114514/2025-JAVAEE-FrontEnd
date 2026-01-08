@@ -106,12 +106,11 @@ export const useExamStore = defineStore('exam', () => {
     }
     //生成试卷码
     function generateExamCode() {
-        const timePart = Date.now().toString().slice(-6) // 毫秒时间戳
-        // const randomPart = Math.floor(Math.random() * 100)
-        //     .toString()
-        //     .padStart(2, '0')
-
-        return timePart
+        const timePart = Date.now().toString().slice(-4) // 毫秒时间戳
+        const randomPart = Math.floor(Math.random() * 100)
+            .toString()
+            .padStart(2, '0')
+        return timePart+randomPart
     }
     // 添加选项
     const addOption = () => {
