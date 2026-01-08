@@ -16,7 +16,7 @@ import { computed } from 'vue'
 import router from "../router/router.js";
 import {useAnswerCardStore} from "../stores/answerCardStore.js";
 import {useExamStore} from "../stores/examStore.js";
-import {getExamByCode, getExamQuestions} from "../api/exam.js";
+import {getExamByCode, getExamQuestions, postAbnormal} from "../api/exam.js";
 const answerCardStore = useAnswerCardStore()
 const route = useRoute()
 const answerStore = useAnswerCardStore()
@@ -168,7 +168,7 @@ onMounted(async () => {
   document.addEventListener('contextmenu', handleRightClick)
   console.log('监听器已绑定')
   if (!autoSaveTimer) {
-    autoSaveTimer = setInterval(answerCardStore.autoSaveExam, 10 * 1000)
+    autoSaveTimer = setInterval(answerCardStore.autoSaveExam, 5 * 1000)
   }
   //获取试卷
   const examId=route.params.id
@@ -215,7 +215,9 @@ onMounted(async () => {
 
 const handleSubmit =async () => {
   const success=await answerStore.submitExam()
-  if (success) {
+  console.log("异常行为测试",examStore.abnormalList)
+  const success2=await postAbnormal(examData.value.id,examStore.abnormalList)
+  if (success&&success2) {
     ElMessage.success('试卷提交成功')
     console.log(answerCardStore.userAnswers)
     router.back()  // 返回上一页

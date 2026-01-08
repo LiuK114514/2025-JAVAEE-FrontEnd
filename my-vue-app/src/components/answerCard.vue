@@ -521,32 +521,33 @@ const getProgressColor = () => {
 //判断题选项渲染
 const getJudgeOptionClass = (question, value, index) => {
 
-  const correctAnswer = question.answer          // 'true' / 'false'
-  const userAnswer = answerStore.userAnswers[index]
-
+  const correctAnswer = String(question.answer);          // 'true' / 'false'
+  const userAnswer = String(answerStore.userAnswers[index]);
+  const optionValue = String(value);
   if (props.mode === 'answer') {
-    if (userAnswer === value) {
-      return 'judge-selected'
+    if (userAnswer === optionValue) {
+      return 'judge-selected';
     }
-    return ''
+    return '';
   }
 
   if (props.mode === 'review' || props.mode === 'grade') {
     // 选中且正确 → 绿色
-    if (userAnswer === value && value === correctAnswer) {
-      return 'judge-selected-correct'
+    if (userAnswer === optionValue && optionValue === correctAnswer) {
+      return 'judge-selected-correct';
     }
 
     // 选中但错误 → 蓝色
-    if (userAnswer === value && value !== correctAnswer) {
-      return 'judge-selected-wrong'
+    if (userAnswer === optionValue && optionValue !== correctAnswer) {
+      return 'judge-selected-wrong';
     }
 
     // 正确答案（未被选） → 红色
-    if (value === correctAnswer) {
-      return 'judge-correct-answer'
+    if (optionValue === correctAnswer) {
+      return 'judge-correct-answer';
     }
   }
+
 
   return ''
 }
@@ -677,9 +678,7 @@ const aiLoading = ref(false)
 const aiAnswer = ref('')
 const askAI = async (question,index) => {
   if (aiAnswer.value) return   // 已获取过，不重复请求
-
   aiLoading.value = true
-
   try {
     const prompt = {
       type:question.type,

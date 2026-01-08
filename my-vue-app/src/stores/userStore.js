@@ -6,7 +6,7 @@ export const useUserStore = defineStore('user', () => {
     const token = ref('')
     const userInfo = ref(null)
     const isLoggedIn = computed(() => !!token.value)
-
+    const isAdmin=ref(false)
 
     // 设置用户信息（登录后调用）
     function setUser(userId, name, email, userToken) {
@@ -39,6 +39,7 @@ export const useUserStore = defineStore('user', () => {
     }
 
     return {
+        isAdmin,
         token,
         userInfo,
         isLoggedIn,

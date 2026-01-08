@@ -172,6 +172,7 @@ const queryExam = async () => {
       startDate: res.startTime.split('T')[0],
       startTime: res.startTime.split('T')[1].slice(0, 5),
       status:map[res.status],
+      allowReview:res.paperShow
     }
     console.log(res)
     // 保存到 Pinia

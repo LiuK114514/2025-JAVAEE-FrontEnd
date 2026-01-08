@@ -295,8 +295,9 @@ const sendVerifyCode = async () => {
 }
 //登录提交
 const onSubmit = () => {
+  const role=isAdminLogin.value ? 'ADMIN' : 'USER'
   formRef.value.validate((valid) => {
-    if (!valid) {
+    if (role==='USER'&&!valid) {
       console.log('表单验证失败')
       ElNotification({
         type: 'error',
@@ -305,7 +306,7 @@ const onSubmit = () => {
       })
       return false
     }
-    const role=isAdminLogin.value ? 'ADMIN' : 'USER'
+
     // 调用登录接口
     login(loginForm.value.email, loginForm.value.password,role)
         .then(res => {
@@ -320,9 +321,10 @@ const onSubmit = () => {
 
           // 存 token + 用户信息 到 store & localStorage
           userStore.setUser(res.id, res.name, res.userName, res.token)
-
+          userStore.isAdmin=true
           // 跳转首页
-          router.push('/')
+          if(role==='USER')router.push('/')
+          else router.push('/dailyTest')
         })
         .catch(err => {
           console.log(err)

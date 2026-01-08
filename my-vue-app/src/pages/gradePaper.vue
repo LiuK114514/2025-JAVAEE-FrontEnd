@@ -76,7 +76,7 @@ function normalizeAnswer(answer, type) {
             .split('')
   }
   // 判断题
-  if (type === 4 || type === 'judge') {
+  if (type === 3 || type === 'judge') {
     return String(answer).toLowerCase() === 'true'
   }
   // 填空 / 简答/单选

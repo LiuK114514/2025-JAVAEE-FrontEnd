@@ -13,6 +13,18 @@ import joinExam from "../pages/joinExam.vue";
 import dailyTest from "../pages/dailyTest.vue";
 import QueryExam from "../pages/queryExam.vue";
 import {ElMessage} from "element-plus";
+import {useUserStore} from "../stores/userStore.js";
+const checkAdminPermission = (to, from, next) => {
+    const userStore = useUserStore?.() || { hasRole: () => false }
+
+    if (userStore.isAdmin) {
+        next()
+    } else {
+        next('/')
+        ElMessage.error('权限不足，无法访问管理后台')
+    }
+}
+
 const routes = [
     { path: '/',
       component: Layout,
@@ -125,7 +137,7 @@ const routes = [
             requiresAuth: true,
             requiresAdmin: true
         },
-        //beforeEnter: checkAdminPermission
+        beforeEnter: checkAdminPermission
     },
     {
         path: '/admin/operation-logs',
@@ -136,7 +148,7 @@ const routes = [
             requiresAuth: true,
             requiresAdmin: true
         },
-        //beforeEnter: checkAdminPermission
+        beforeEnter: checkAdminPermission
     }
 
 ]
@@ -146,34 +158,24 @@ const router = createRouter({
     routes,
 })
 
-const checkAdminPermission = (to, from, next) => {
-    const userStore = useUserStore?.() || { hasRole: () => false }
 
-    if (userStore.hasRole('admin')) {
-        next()
-    } else {
-        next('/practice')
-        ElMessage.error('权限不足，无法访问管理后台')
+//全局路由守卫
+router.beforeEach((to, from, next) => {
+    // 设置页面标题
+    if (to.meta.title) {
+        document.title = `${to.meta.title} - 考试练习系统`
     }
-}
 
-// 全局路由守卫
-// router.beforeEach((to, from, next) => {
-//     // 设置页面标题
-//     if (to.meta.title) {
-//         document.title = `${to.meta.title} - 考试练习系统`
-//     }
-//
-//     // 检查是否需要登录
-//     if (to.meta.requiresAuth) {
-//         const token = localStorage.getItem('token')
-//         if (!token || token === 'null') {
-//             ElMessage.error('请先登录')
-//             return next('/login')
-//         }
-//     }
-//
-//     next()
-// })
+    // 检查是否需要登录
+    if (to.meta.requiresAuth) {
+        const token = localStorage.getItem('token')
+        if (!token || token === 'null') {
+            ElMessage.error('请先登录')
+            return next('/login')
+        }
+    }
+
+    next()
+})
 
 export default router

@@ -640,11 +640,7 @@ const startGrading = async (examId,row) => {
 
 }
 
-// 查看批阅详情
-const viewGradingDetail = (student) => {
-  console.log('查看批阅详情:', student)
-  // 这里添加你的查看详情逻辑
-}
+
 
 // 获取进度条颜色
 const getProgressColor = (range) => {

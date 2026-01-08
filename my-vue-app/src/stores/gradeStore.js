@@ -32,63 +32,63 @@ export const useGradeStore = defineStore('grade', () => {
         }))
 
         currentGrading.value.userAnswers = userAnswers || []
-
+        console.log(currentGrading.value)
         // 初始化主观题得分映射
         questionScores.value = {}
 
-        // 自动评分客观题
-        const hasGraded = questions.some(q => q.userScore > 0)
-        if (!hasGraded) {
-            autoGradeObjectiveQuestions()
-        }
+        // // 自动评分客观题
+        // const hasGraded = questions.some(q => q.userScore > 0)
+        // if (!hasGraded) {
+        //     autoGradeObjectiveQuestions()
+        // }
     }
-    // 自动评分客观题（单选、多选、判断）
-    const autoGradeObjectiveQuestions = () => {
-        currentGrading.value.questions.forEach((q, index) => {
-            if (!['single', 'multiple', 'judge', 'fill'].includes(q.type)) return
-
-            const userAnswer = currentGrading.value.userAnswers[index]
-            let isCorrect = false
-
-            if (q.type === 'single' || q.type === 'judge') {
-                isCorrect = userAnswer === q.answer
-                q.userScore = isCorrect ? q.score : 0
-            }
-            else if (q.type === 'multiple') {
-                const correctSet = new Set(Array.isArray(q.answer) ? q.answer : [])
-                const userSet = new Set(Array.isArray(userAnswer) ? userAnswer : [])
-
-                // 计算选对和选错
-                let hit = 0
-                let wrong = 0
-
-                userSet.forEach(a => {
-                    if (correctSet.has(a)) hit++
-                    else wrong++
-                })
-
-                if (wrong > 0) {
-                    q.userScore = 0       // 选错任何一个 → 0 分
-                } else if (hit === correctSet.size) {
-                    q.userScore = q.score // 全对 → 满分
-                } else if (hit > 0) {
-                    q.userScore = Math.round(q.score / 2 * 10) / 10  // 选对部分 → 一半分
-                } else {
-                    q.userScore = 0       // 没选对任何 → 0 分
-                }
-
-            }else if (q.type === 'fill') {
-                const correctArr = Array.isArray(q.answer) ? q.answer : [q.answer]
-                const userArr = Array.isArray(userAnswer) ? userAnswer : [userAnswer]
-
-                isCorrect = correctArr.every((ans, i) =>
-                    (userArr[i] || '').trim() === (ans || '').trim()
-                )
-                q.userScore = isCorrect ? q.score : 0
-            }
-
-        })
-    }
+    // // 自动评分客观题（单选、多选、判断）
+    // const autoGradeObjectiveQuestions = () => {
+    //     currentGrading.value.questions.forEach((q, index) => {
+    //         if (!['single', 'multiple', 'judge', 'fill'].includes(q.type)) return
+    //
+    //         const userAnswer = currentGrading.value.userAnswers[index]
+    //         let isCorrect = false
+    //
+    //         if (q.type === 'single' || q.type === 'judge') {
+    //             isCorrect = userAnswer === q.answer
+    //             q.userScore = isCorrect ? q.score : 0
+    //         }
+    //         else if (q.type === 'multiple') {
+    //             const correctSet = new Set(Array.isArray(q.answer) ? q.answer : [])
+    //             const userSet = new Set(Array.isArray(userAnswer) ? userAnswer : [])
+    //
+    //             // 计算选对和选错
+    //             let hit = 0
+    //             let wrong = 0
+    //
+    //             userSet.forEach(a => {
+    //                 if (correctSet.has(a)) hit++
+    //                 else wrong++
+    //             })
+    //
+    //             if (wrong > 0) {
+    //                 q.userScore = 0       // 选错任何一个 → 0 分
+    //             } else if (hit === correctSet.size) {
+    //                 q.userScore = q.score // 全对 → 满分
+    //             } else if (hit > 0) {
+    //                 q.userScore = Math.round(q.score / 2 * 10) / 10  // 选对部分 → 一半分
+    //             } else {
+    //                 q.userScore = 0       // 没选对任何 → 0 分
+    //             }
+    //
+    //         }else if (q.type === 'fill') {
+    //             const correctArr = Array.isArray(q.answer) ? q.answer : [q.answer]
+    //             const userArr = Array.isArray(userAnswer) ? userAnswer : [userAnswer]
+    //
+    //             isCorrect = correctArr.every((ans, i) =>
+    //                 (userArr[i] || '').trim() === (ans || '').trim()
+    //             )
+    //             q.userScore = isCorrect ? q.score : 0
+    //         }
+    //
+    //     })
+    // }
 
     // 更新题目分数（手动评分）
     const updateQuestionScore = (index, score) => {
@@ -101,9 +101,11 @@ export const useGradeStore = defineStore('grade', () => {
     // 计算总分
     const calculateTotalScore = () => {
         return currentGrading.value.questions.reduce((sum, q, index) => {
-            if (['single', 'multiple', 'judge'].includes(q.type)) {
+
+            if (['single', 'multiple', 'judge'].includes(q.type)|| q.userScore!==0) {
                 return sum + (q.userScore || 0)
-            } else {
+            }
+            else {
                 return sum + (questionScores.value[index] || 0)
             }
         }, 0)

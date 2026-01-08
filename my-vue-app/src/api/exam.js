@@ -63,6 +63,9 @@ export function getExamQuestions(examId) {
 export function getBehavior(examId) {
     return request.get(`/abnormal/get/behavior?examId=${examId}`)
 }
+export function postAbnormal(examId,data) {
+    return request.post(`/exam/${examId}/submit/abnormal`,data)
+}
 //获取ai解答
 export async function getAIAnswer(prompt) {
     return request.post('/ai',prompt);

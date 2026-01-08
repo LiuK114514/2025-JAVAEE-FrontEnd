@@ -22,7 +22,7 @@ export const useExamStore = defineStore('exam', () => {
     function reportAbnormal(type, remark = '') {
         abnormalList.value.push({
             behaviorType: type,
-            occurTime: new Date().toLocaleString(),
+            occurTime: new Date().toISOString().slice(0, 19),
             remark
         })
     }
@@ -159,6 +159,7 @@ export const useExamStore = defineStore('exam', () => {
     //考试页搜索
     const examsearchForm = ref({
         examName: '',
+        status:'',
         reviewStatus: '',
         dateRange: null
     })
@@ -238,6 +239,9 @@ export const useExamStore = defineStore('exam', () => {
             result = result.filter(exam =>
                 exam.examName.toLowerCase().includes(examsearchForm.value.examName.toLowerCase())
             )
+        }
+        if (examsearchForm.value.status) {
+            result = result.filter(exam => exam.status===examsearchForm.value.status)
         }
 
         if (examsearchForm.value.reviewStatus !== null && examsearchForm.value.reviewStatus !== undefined) {
@@ -414,7 +418,7 @@ export const useExamStore = defineStore('exam', () => {
         resetExamesearchForm()
         const res = await getAllExams()
         allExams.value = formatExamList(res.records)
-        // console.log(res.records)
+        console.log(allExams.value)
         await loadReviewProgress()
         // allExams.value = [
         //     {
@@ -630,7 +634,6 @@ export const useExamStore = defineStore('exam', () => {
     const fetchSubmissions = async (examId) => {
         const res=await getAllStudents(examId)
         studentSubmissions.value = formatStudentSubmissions(res.records)
-
         // if (examId === 3) {
         //     studentSubmissions.value = [
         //         { id: 1, name: '张三', email: '1358709071@qq.com', submitTime: '2024-12-08 16:25', status: 'graded', score: 85 },
@@ -1007,6 +1010,7 @@ export const useExamStore = defineStore('exam', () => {
         // ]
         try {
             const res = await getBehavior(examId)
+            console.log(res)
             // 假设后端返回：res.records
             abnormalList.value = transformAbnormalLogs(res)
         } catch (error) {

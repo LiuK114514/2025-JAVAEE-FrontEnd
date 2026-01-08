@@ -438,11 +438,16 @@ import {Delete} from "@element-plus/icons-vue";
 import { useExamStore } from '../stores/examStore'
 import {createExam} from "../api/exam.js";
 import * as XLSX from 'xlsx'
+import router from "../router/router.js";
 const examStore = useExamStore()
 const active = ref(0)
 
 //生成试卷码
 onMounted(() => {
+  const logInfo = localStorage.getItem('userInfo')
+  if (!logInfo) {
+    router.replace('/login')
+  }
   if (!examStore.formData.examCode) {
     examStore.formData.examCode = examStore.generateExamCode()
     examStore.formData.description='1. 本次考试为线上闭卷考试，请在规定时间内独立完成，不得与他人交流或使用任何未授权的资料。\n' +
@@ -453,6 +458,7 @@ onMounted(() => {
         '6. 若考试过程中出现异常情况，请及时联系监考人员或管理员。\n' +
         '7. 本次考试的最终解释权归考试组织方所有。'
   }
+
 })
 //重新生成试卷码
 const regenerateExamCode=()=>{
