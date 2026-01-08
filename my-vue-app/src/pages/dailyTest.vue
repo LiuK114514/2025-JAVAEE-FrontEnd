@@ -48,11 +48,11 @@
                         :label="index"
                         :class="store.getOptionClass(index)"
                         class="option-item"
-                        @click="store.selectOption(option.key)"
+                        @click="store.selectOption(option.optionKey)"
                     >
                       <div class="option-content">
-                        <span class="option-letter">{{ option.key }}: </span>
-                        <span class="option-text">{{ option.text }}</span>
+                        <span class="option-letter">{{ option.optionKey }}: </span>
+                        <span class="option-text">{{ option.optionText }}</span>
                       </div>
                     </el-radio>
                   </el-radio-group>
@@ -77,16 +77,16 @@
                     </template>
                   </el-button>
 
-                  <el-button
-                      @click="getRandomQuestion"
-                      type="info"
-                      plain
-                      size="large"
-                      :disabled="store.loading"
-                  >
-                    <i class="fas fa-random"></i>
-                    随机题目
-                  </el-button>
+<!--                  <el-button-->
+<!--                      @click="getRandomQuestion"-->
+<!--                      type="info"-->
+<!--                      plain-->
+<!--                      size="large"-->
+<!--                      :disabled="store.loading"-->
+<!--                  >-->
+<!--                    <i class="fas fa-random"></i>-->
+<!--                    随机题目-->
+<!--                  </el-button>-->
                 </div>
 
                 <!-- 结果展示 -->
